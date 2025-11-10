@@ -1,0 +1,14 @@
+# Core web scraping dependencies
+requests>=2.31.0
+beautifulsoup4>=4.12.2
+lxml>=4.9.3
+
+# Web server for viewing results
+flask>=3.0.0
+
+# Optional: For future enhancements
+# selenium>=4.15.2
+# webdriver-manager>=4.0.1
+# pandas>=2.1.3
+# python-dotenv>=1.0.0
+

@@ -1,0 +1,21 @@
+{
+  "search_params": {
+    "locations": ["London"],
+    "min_price": 0,
+    "max_price": 1000000,
+    "property_types": ["house", "flat"],
+    "max_pages": 2,
+    "min_bedrooms": null,
+    "max_bedrooms": null,
+    "min_bathrooms": null,
+    "max_bathrooms": null,
+    "has_garden": null,
+    "has_balcony": null,
+    "exclude_student_accommodation": true,
+    "exclude_house_shares": true,
+    "exclude_retirement": true
+  },
+  "output_dir": "output",
+  "delay_between_requests": 3
+}
+

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UK Property Trawler - Results</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .stat-card h3 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .filter-group label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .filter-group select, .filter-group input {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .properties-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .property-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .property-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+        
+        .property-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .property-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .property-content {
+            padding: 20px;
+        }
+        
+        .property-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+        
+        .property-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+            margin-right: 10px;
+        }
+        
+        .property-price {
+            font-size: 20px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .property-address {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .property-details {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .detail-badge {
+            background: #f0f0f0;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #555;
+        }
+        
+        .feature-badge {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .property-description {
+            color: #777;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            max-height: 60px;
+            overflow: hidden;
+        }
+        
+        .property-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .property-source {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .property-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .property-link:hover {
+            text-decoration: underline;
+        }
+        
+        .no-properties {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            color: #666;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏠 UK Property Trawler</h1>
+            <p>Found <strong>{{ count }}</strong> properties</p>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>{{ count }}</h3>
+                    <p>Total Properties</p>
+                </div>
+                <div class="stat-card" id="stat-garden">
+                    <h3>-</h3>
+                    <p>With Garden</p>
+                </div>
+                <div class="stat-card" id="stat-balcony">
+                    <h3>-</h3>
+                    <p>With Balcony</p>
+                </div>
+                <div class="stat-card" id="stat-price">
+                    <h3>-</h3>
+                    <p>Avg Price</p>
+                </div>
+            </div>
+        </header>
+        
+        <div class="filters">
+            <input type="text" class="search-box" id="searchBox" placeholder="Search properties by title, address, or description...">
+            <div class="filter-group">
+                <label>Source:</label>
+                <select id="filterSource">
+                    <option value="">All Sources</option>
+                </select>
+                
+                <label>Type:</label>
+                <select id="filterType">
+                    <option value="">All Types</option>
+                    <option value="house">House</option>
+                    <option value="flat">Flat</option>
+                </select>
+                
+                <label>Features:</label>
+                <select id="filterFeatures">
+                    <option value="">All</option>
+                    <option value="garden">Has Garden</option>
+                    <option value="balcony">Has Balcony</option>
+                </select>
+            </div>
+            <div class="filter-group" style="margin-top: 15px;">
+                <label>Price Range:</label>
+                <input type="number" id="minPrice" placeholder="Min £" style="width: 100px;">
+                <span>to</span>
+                <input type="number" id="maxPrice" placeholder="Max £" style="width: 100px;">
+                
+                <label style="margin-left: 20px;">Bedrooms:</label>
+                <input type="number" id="minBedrooms" placeholder="Min" style="width: 80px;" min="0">
+                <span>to</span>
+                <input type="number" id="maxBedrooms" placeholder="Max" style="width: 80px;" min="0">
+                
+                <label style="margin-left: 20px;">Bathrooms:</label>
+                <input type="number" id="minBathrooms" placeholder="Min" style="width: 80px;" min="0">
+                <span>to</span>
+                <input type="number" id="maxBathrooms" placeholder="Max" style="width: 80px;" min="0">
+            </div>
+        </div>
+        
+        <div class="properties-grid" id="propertiesGrid">
+            {% if properties %}
+                {% for prop in properties %}
+                <div class="property-card" 
+                     data-source="{{ prop.source }}" 
+                     data-type="{{ prop.property_type }}"
+                     data-title="{{ prop.title|lower }}"
+                     data-address="{{ prop.address|lower }}"
+                     data-description="{{ prop.description|lower }}"
+                     data-price="{{ prop.price or 0 }}"
+                     data-bedrooms="{{ prop.bedrooms or 0 }}"
+                     data-bathrooms="{{ prop.bathrooms or 0 }}">
+                    {% if prop.image_url %}
+                    <div class="property-image">
+                        <img src="{{ prop.image_url }}" alt="{{ prop.title }}" onerror="this.parentElement.innerHTML='No Image'">
+                    </div>
+                    {% else %}
+                    <div class="property-image">No Image Available</div>
+                    {% endif %}
+                    <div class="property-content">
+                        <div class="property-header">
+                            <div class="property-title">{{ prop.title }}</div>
+                            {% if prop.price %}
+                            <div class="property-price">£{{ "%.0f"|format(prop.price) }}</div>
+                            {% else %}
+                            <div class="property-price">Price on request</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="property-address">📍 {{ prop.address }}</div>
+                    
+                    <div class="property-details">
+                        {% if prop.bedrooms %}
+                        <span class="detail-badge">🛏️ {{ prop.bedrooms }} bed</span>
+                        {% endif %}
+                        {% if prop.bathrooms %}
+                        <span class="detail-badge">🚿 {{ prop.bathrooms }} bath</span>
+                        {% endif %}
+                        {% if prop.has_garden %}
+                        <span class="feature-badge">🌳 Garden</span>
+                        {% endif %}
+                        {% if prop.has_balcony %}
+                        <span class="feature-badge">🏖️ Balcony</span>
+                        {% endif %}
+                    </div>
+                    
+                    {% if prop.description and prop.description != prop.title %}
+                    <div class="property-description">{{ prop.description[:150] }}{% if prop.description|length > 150 %}...{% endif %}</div>
+                    {% endif %}
+                    
+                        <div class="property-footer">
+                            <span class="property-source">{{ prop.source }}</span>
+                            {% if prop.url %}
+                            <a href="{{ prop.url }}" target="_blank" class="property-link">View Listing →</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-properties">
+                    <h2>No properties found</h2>
+                    <p>Run the trawler to scrape properties first.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script>
+        // Load stats
+        fetch('/api/stats')
+            .then(res => res.json())
+            .then(stats => {
+                document.getElementById('stat-garden').querySelector('h3').textContent = stats.with_garden;
+                document.getElementById('stat-balcony').querySelector('h3').textContent = stats.with_balcony;
+                if (stats.price_range.avg) {
+                    document.getElementById('stat-price').querySelector('h3').textContent = '£' + Math.round(stats.price_range.avg).toLocaleString();
+                }
+            });
+        
+        // Populate source filter
+        const sources = new Set();
+        document.querySelectorAll('.property-card').forEach(card => {
+            sources.add(card.dataset.source);
+        });
+        const sourceSelect = document.getElementById('filterSource');
+        sources.forEach(source => {
+            const option = document.createElement('option');
+            option.value = source;
+            option.textContent = source;
+            sourceSelect.appendChild(option);
+        });
+        
+        // Filter functionality
+        function filterProperties() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            const sourceFilter = document.getElementById('filterSource').value;
+            const typeFilter = document.getElementById('filterType').value;
+            const featuresFilter = document.getElementById('filterFeatures').value;
+            const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
+            const maxPrice = parseFloat(document.getElementById('maxPrice').value) || Infinity;
+            const minBedrooms = parseInt(document.getElementById('minBedrooms').value) || 0;
+            const maxBedrooms = parseInt(document.getElementById('maxBedrooms').value) || Infinity;
+            const minBathrooms = parseInt(document.getElementById('minBathrooms').value) || 0;
+            const maxBathrooms = parseInt(document.getElementById('maxBathrooms').value) || Infinity;
+            
+            document.querySelectorAll('.property-card').forEach(card => {
+                let show = true;
+                
+                // Search filter
+                if (searchTerm) {
+                    const title = card.dataset.title || '';
+                    const address = card.dataset.address || '';
+                    const description = card.dataset.description || '';
+                    if (!title.includes(searchTerm) && !address.includes(searchTerm) && !description.includes(searchTerm)) {
+                        show = false;
+                    }
+                }
+                
+                // Source filter
+                if (sourceFilter && card.dataset.source !== sourceFilter) {
+                    show = false;
+                }
+                
+                // Type filter
+                if (typeFilter && card.dataset.type !== typeFilter) {
+                    show = false;
+                }
+                
+                // Price filter
+                const price = parseFloat(card.dataset.price) || 0;
+                if (price < minPrice || price > maxPrice) {
+                    show = false;
+                }
+                
+                // Bedrooms filter
+                const bedrooms = parseInt(card.dataset.bedrooms) || 0;
+                if (bedrooms < minBedrooms || bedrooms > maxBedrooms) {
+                    show = false;
+                }
+                
+                // Bathrooms filter
+                const bathrooms = parseInt(card.dataset.bathrooms) || 0;
+                if (bathrooms < minBathrooms || bathrooms > maxBathrooms) {
+                    show = false;
+                }
+                
+                // Features filter
+                if (featuresFilter) {
+                    const hasGarden = card.querySelector('.feature-badge') && card.querySelector('.feature-badge').textContent.includes('Garden');
+                    const hasBalcony = card.querySelector('.feature-badge') && card.querySelector('.feature-badge').textContent.includes('Balcony');
+                    
+                    if (featuresFilter === 'garden' && !hasGarden) {
+                        show = false;
+                    }
+                    if (featuresFilter === 'balcony' && !hasBalcony) {
+                        show = false;
+                    }
+                }
+                
+                card.style.display = show ? 'block' : 'none';
+            });
+            
+            // Update count
+            const visible = document.querySelectorAll('.property-card[style="display: block;"]').length;
+            document.querySelector('header p').innerHTML = `Found <strong>${visible}</strong> properties`;
+        }
+        
+        document.getElementById('searchBox').addEventListener('input', filterProperties);
+        document.getElementById('filterSource').addEventListener('change', filterProperties);
+        document.getElementById('filterType').addEventListener('change', filterProperties);
+        document.getElementById('filterFeatures').addEventListener('change', filterProperties);
+        document.getElementById('minPrice').addEventListener('input', filterProperties);
+        document.getElementById('maxPrice').addEventListener('input', filterProperties);
+        document.getElementById('minBedrooms').addEventListener('input', filterProperties);
+        document.getElementById('maxBedrooms').addEventListener('input', filterProperties);
+        document.getElementById('minBathrooms').addEventListener('input', filterProperties);
+        document.getElementById('maxBathrooms').addEventListener('input', filterProperties);
+        
+        // Helper for contains check
+        Element.prototype.contains = function(text) {
+            return this.textContent.includes(text);
+        };
+    </script>
+</body>
+</html>
+
