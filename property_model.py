@@ -25,6 +25,7 @@ class Property:
     has_garden: Optional[bool] = None
     has_balcony: Optional[bool] = None
     image_url: Optional[str] = None
+    match_score: Optional[float] = None  # Score from 0-100 indicating how well it matches search criteria
     
     def to_dict(self) -> dict:
         """Convert property to dictionary for JSON/CSV export."""
@@ -45,6 +46,7 @@ class Property:
             "has_garden": self.has_garden,
             "has_balcony": self.has_balcony,
             "image_url": self.image_url,
+            "match_score": self.match_score,
             "scraped_at": datetime.now().isoformat()
         }
 

@@ -1,7 +1,7 @@
 """
 Flask web application to view scraped properties.
 """
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 import json
 import os
 from storage import PropertyStorage
@@ -82,6 +82,73 @@ def api_stats():
         stats['price_range']['avg'] = sum(prices) / len(prices)
     
     return jsonify(stats)
+
+@app.route('/api/run-trawler', methods=['POST'])
+def run_trawler():
+    """API endpoint to run the trawler with search parameters."""
+    import subprocess
+    import threading
+    import json as json_lib
+    
+    # Get search parameters from request
+    data = request.get_json() or {}
+    search_params = data.get('search_params', {})
+    
+    def run_trawler_async():
+        """Run trawler in background with custom config."""
+        try:
+            # Create temporary config with search parameters
+            temp_config = {
+                "search_params": {
+                    "locations": search_params.get('locations', ['London']),
+                    "min_price": search_params.get('min_price', 0),
+                    "max_price": search_params.get('max_price', 1000000),
+                    "property_types": search_params.get('property_types', ['house', 'flat']),
+                    "max_pages": search_params.get('max_pages', 20),
+                    "min_bedrooms": search_params.get('min_bedrooms'),
+                    "max_bedrooms": search_params.get('max_bedrooms'),
+                    "min_bathrooms": search_params.get('min_bathrooms'),
+                    "max_bathrooms": search_params.get('max_bathrooms'),
+                    "has_garden": search_params.get('has_garden'),
+                    "has_balcony": search_params.get('has_balcony'),
+                    "exclude_student_accommodation": search_params.get('exclude_student_accommodation', True),
+                    "exclude_house_shares": search_params.get('exclude_house_shares', True),
+                    "exclude_retirement": search_params.get('exclude_retirement', True),
+                    "keywords": search_params.get('keywords')
+                },
+                "output_dir": "output",
+                "delay_between_requests": 3
+            }
+            
+            # Save temp config
+            temp_config_path = os.path.join(os.getcwd(), 'temp_config.json')
+            with open(temp_config_path, 'w') as f:
+                json_lib.dump(temp_config, f, indent=2)
+            
+            # Run trawler with temp config
+            import sys
+            result = subprocess.run([
+                sys.executable, 'main.py'
+            ], cwd=os.getcwd(), check=True, env={**os.environ, 'CONFIG_FILE': temp_config_path})
+            
+            # Clean up temp config
+            if os.path.exists(temp_config_path):
+                os.remove(temp_config_path)
+                
+        except Exception as e:
+            print(f"Error running trawler: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    # Run trawler in background thread
+    thread = threading.Thread(target=run_trawler_async)
+    thread.daemon = True
+    thread.start()
+    
+    return jsonify({
+        'status': 'started',
+        'message': 'Trawler started with your search criteria. Finding the perfect properties for you!'
+    })
 
 if __name__ == '__main__':
     import sys

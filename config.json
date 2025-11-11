@@ -4,7 +4,7 @@
     "min_price": 0,
     "max_price": 1000000,
     "property_types": ["house", "flat"],
-    "max_pages": 2,
+    "max_pages": 20,
     "min_bedrooms": null,
     "max_bedrooms": null,
     "min_bathrooms": null,

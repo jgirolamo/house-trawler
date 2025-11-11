@@ -16,9 +16,105 @@ class UKPropertyTrawler:
     def __init__(self, delay: float = 2.0):
         self.delay = delay
         self.session = requests.Session()
+        
+        # Session will handle cookies automatically via requests.Session()
+        
+        # Enhanced headers to mimic a real browser more closely
         self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-User': '?1',
+            'Cache-Control': 'max-age=0'
         })
+        
+        # Initialize session by visiting common sites to establish cookies
+        self._initialize_session()
+    
+    def _initialize_session(self):
+        """Initialize session by visiting homepage to get cookies."""
+        try:
+            # Visit Google first to establish a "normal" browsing pattern
+            try:
+                self.session.get('https://www.google.com/', timeout=5)
+                time.sleep(0.5)
+            except:
+                pass
+            
+            # Visit each site's homepage to establish session cookies
+            sites_to_visit = [
+                'https://www.spareroom.co.uk/',
+                'https://www.openrent.co.uk/',
+                'https://www.gumtree.com/',
+                'https://www.onthemarket.com/',
+            ]
+            
+            for site in sites_to_visit:
+                try:
+                    response = self.session.get(site, timeout=10, allow_redirects=True)
+                    # Cookies are automatically stored by requests.Session()
+                    time.sleep(0.5)
+                except:
+                    continue
+            
+            print("Session initialized with cookies")
+        except Exception as e:
+            print(f"Warning: Could not fully initialize session: {e}")
+    
+    def _get_with_session(self, url: str, timeout: int = 15, allow_redirects: bool = True, headers: dict = None):
+        """Make a request with proper session and cookie handling."""
+        # Merge headers
+        request_headers = self.session.headers.copy()
+        if headers:
+            request_headers.update(headers)
+        
+        # Make request with session cookies (automatically handled by requests.Session)
+        response = self.session.get(url, timeout=timeout, allow_redirects=allow_redirects, headers=request_headers)
+        
+        # Cookies are automatically stored by requests.Session
+        
+        return response
+    
+    def _fuzzy_match_keyword(self, keyword: str, text: str) -> bool:
+        """Check if keyword matches text with typo tolerance using Levenshtein distance."""
+        from difflib import SequenceMatcher
+        
+        # Skip very short keywords (1-3 chars) - require exact match
+        if len(keyword) <= 3:
+            return keyword in text
+        
+        # Split text into words
+        words = re.split(r'\s+', text)
+        
+        for word in words:
+            # Skip very short words
+            if len(word) < 3:
+                continue
+            
+            # Check if keyword is contained in word or vice versa
+            if keyword in word or word in keyword:
+                return True
+            
+            # Calculate similarity ratio (0.0 to 1.0)
+            similarity = SequenceMatcher(None, keyword, word).ratio()
+            
+            # For words 4-6 chars: allow 1 typo (similarity >= 0.75)
+            # For words 7+ chars: allow 2 typos (similarity >= 0.70)
+            if len(keyword) <= 6:
+                if similarity >= 0.75:
+                    return True
+            else:
+                if similarity >= 0.70:
+                    return True
+        
+        return False
     
     def _extract_price(self, text: str) -> Optional[float]:
         """Extract price from text string."""
@@ -286,14 +382,162 @@ class UKPropertyTrawler:
         
         return None
     
-    def scrape_rightmove(self, location: str, property_type: str, max_pages: int = 5) -> List[Property]:
+    def scrape_rightmove(self, location: str, property_type: str = "house", max_pages: int = 5) -> List[Property]:
         """
-        Scrape Rightmove (example implementation - note: Rightmove has strict anti-scraping).
-        This is a template that would need to be adapted based on actual site structure.
+        Scrape Rightmove for property listings.
+        Using simplified approach like Gumtree.
         """
         properties = []
-        print(f"Note: Rightmove scraping requires careful implementation due to anti-scraping measures.")
-        print(f"Consider using their API or official data feeds if available.")
+        print(f"Scraping Rightmove for {property_type}s in {location}...")
+        
+        try:
+            base_url = "https://www.rightmove.co.uk"
+            
+            # Simple approach - start with basic URLs (like we did for Gumtree)
+            # First visit homepage to establish session
+            try:
+                self._get_with_session(f"{base_url}/", timeout=10)
+                time.sleep(1)
+            except:
+                pass
+            
+            # Try the simplest URL patterns first
+            search_urls = [
+                # Simple search patterns
+                f"{base_url}/property-to-rent/find.html?locationIdentifier={quote(location)}",
+                f"{base_url}/property-to-rent/find.html?searchLocation={quote(location)}",
+                f"{base_url}/property-to-rent.html?locationIdentifier={quote(location)}",
+                f"{base_url}/property-to-rent/find.html?q={quote(location)}",
+            ]
+            
+            response = None
+            for search_url in search_urls:
+                try:
+                    response = self._get_with_session(search_url, timeout=15)
+                    if response.status_code == 200 and len(response.content) > 5000:
+                        break
+                    time.sleep(0.5)
+                except:
+                    continue
+            
+            if not response or response.status_code != 200:
+                print(f"  Could not access Rightmove (tried {len(search_urls)} URL formats)")
+                return properties
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Try multiple selectors for Rightmove
+            listings = soup.find_all('div', class_=re.compile(r'propertyCard|property-card|l-property', re.I))
+            
+            # Fallback to other patterns
+            if not listings:
+                listings = soup.find_all('div', class_=re.compile(r'property|listing|result', re.I))
+            
+            # Fallback to article patterns
+            if not listings:
+                listings = soup.find_all('article', class_=re.compile(r'property|listing|result', re.I))
+            
+            # Last resort: find by property links
+            if not listings:
+                property_links = soup.find_all('a', href=re.compile(r'/properties/', re.I))
+                if property_links:
+                    listings = []
+                    for link in property_links[:500]:
+                        parent = link.find_parent(['div', 'article', 'li'])
+                        if parent and parent not in listings:
+                            listings.append(parent)
+            
+            print(f"  Found {len(listings)} potential listings on Rightmove")
+            
+            for listing in listings[:500]:  # Limit to first 500 properties per search
+                try:
+                    all_text = listing.get_text(separator=' ', strip=True)
+                    if len(all_text) < 5:
+                        continue
+                    
+                    # Find title
+                    title_elem = (
+                        listing.find('h2') or
+                        listing.find('h3') or
+                        listing.find('a', class_=re.compile(r'title|name', re.I)) or
+                        listing.find('div', class_=re.compile(r'title|heading', re.I))
+                    )
+                    
+                    if not title_elem:
+                        continue
+                    
+                    title = title_elem.get_text(strip=True)
+                    if not title or len(title) < 5:
+                        continue
+                    
+                    # Get URL
+                    link_elem = listing.find('a', href=re.compile(r'/properties/', re.I))
+                    if not link_elem:
+                        link_elem = listing.find('a', href=True)
+                    
+                    url = ""
+                    if link_elem:
+                        href = link_elem.get('href', '')
+                        if href.startswith('http'):
+                            url = href
+                        else:
+                            url = urljoin(base_url, href)
+                    
+                    # Extract price
+                    price = self._extract_price(all_text or title)
+                    
+                    # Extract address (try to find address element)
+                    address_elem = (
+                        listing.find('address') or
+                        listing.find('div', class_=re.compile(r'address', re.I)) or
+                        listing.find('span', class_=re.compile(r'address', re.I))
+                    )
+                    address = address_elem.get_text(strip=True) if address_elem else location
+                    
+                    # Extract bedrooms and bathrooms
+                    bedrooms = self._extract_bedrooms(all_text or title)
+                    bathrooms = self._extract_bathrooms(all_text or title)
+                    has_garden = self._extract_garden(all_text or title)
+                    has_balcony = self._extract_balcony(all_text or title)
+                    
+                    # Get description
+                    desc_elem = listing.find('div', class_=re.compile(r'description|summary', re.I))
+                    description = desc_elem.get_text(strip=True) if desc_elem else title
+                    
+                    # Determine property type
+                    combined_text = (title + " " + description).lower()
+                    prop_type = "flat" if any(word in combined_text for word in ["flat", "apartment"]) else "house"
+                    
+                    property_obj = Property(
+                        title=title,
+                        price=price,
+                        address=address,
+                        property_type=prop_type,
+                        bedrooms=bedrooms,
+                        bathrooms=bathrooms,
+                        area_sqft=None,
+                        description=description[:500] if description else title,
+                        url=url,
+                        source="Rightmove",
+                        listed_date=None,
+                        location=location,
+                        postcode=self._extract_postcode(address),
+                        has_garden=has_garden,
+                        has_balcony=has_balcony,
+                        image_url=self._extract_image_url(listing, base_url)
+                    )
+                    
+                    properties.append(property_obj)
+                    
+                except Exception as e:
+                    print(f"    Error parsing Rightmove listing: {e}")
+                    continue
+            
+            time.sleep(self.delay)
+            
+        except Exception as e:
+            print(f"  Error scraping Rightmove: {e}")
+        
         return properties
     
     def scrape_zoopla(self, location: str, property_type: str, max_pages: int = 5) -> List[Property]:
@@ -316,18 +560,36 @@ class UKPropertyTrawler:
         try:
             # Spareroom search URL for whole properties
             base_url = "https://www.spareroom.co.uk"
-            # Try different URL formats
+            
+            # Visit main page to establish session and get cookies
+            try:
+                self._get_with_session(f"{base_url}/", timeout=15)
+                time.sleep(1)
+            except:
+                pass
+            
+            # Try updated URL patterns - Spareroom uses different structure now
+            # Try searching for whole properties specifically
             search_urls = [
-                f"{base_url}/flatshare/?search_id=&flatshare_type=whole_property&search={quote(location)}",
-                f"{base_url}/flatshare/flatshare.pl?search_id=&action=search&flatshare_type=whole_property&search={quote(location)}",
-                f"{base_url}/flatshare/?search={quote(location)}&flatshare_type=whole_property"
+                # Try the main search page with location
+                f"{base_url}/flatshare/?search={quote(location)}",
+                # Try whole property search
+                f"{base_url}/flatshare/?search={quote(location)}&flatshare_type=whole_property",
+                # Try with location parameter
+                f"{base_url}/flatshare/?location={quote(location)}",
+                # Try old format
+                f"{base_url}/flatshare/flatshare.pl?search_id=&search={quote(location)}",
+                # Try whole property with old format
+                f"{base_url}/flatshare/flatshare.pl?search_id=&flatshare_type=whole_property&search={quote(location)}",
+                # Try just the flatshare main page - we'll search in the HTML
+                f"{base_url}/flatshare/",
             ]
             
             response = None
             for search_url in search_urls:
                 try:
-                    response = self.session.get(search_url, timeout=15, allow_redirects=True)
-                    if response.status_code == 200:
+                    response = self._get_with_session(search_url, timeout=15)
+                    if response.status_code == 200 and len(response.content) > 5000:
                         break
                 except:
                     continue
@@ -340,15 +602,19 @@ class UKPropertyTrawler:
             
             soup = BeautifulSoup(response.content, 'html.parser')
             
-            # Try multiple possible selectors for property listings
-            listings = (
-                soup.find_all('article', class_='listing-result') or
-                soup.find_all('li', class_='listing-result') or
-                soup.find_all('div', class_='listing-result') or
-                soup.find_all('div', {'data-listing-id': True}) or
-                soup.find_all('article') or
-                []
-            )
+            # Spareroom uses 'listing-card' class - this is the correct selector
+            listings = soup.find_all('article', class_=re.compile(r'listing-card', re.I))
+            
+            if not listings:
+                # Fallback to other possible selectors
+                listings = (
+                    soup.find_all('article', class_='listing-result') or
+                    soup.find_all('li', class_='listing-result') or
+                    soup.find_all('div', class_='listing-result') or
+                    soup.find_all('div', {'data-listing-id': True}) or
+                    soup.find_all('article') or
+                    []
+                )
             
             if not listings:
                 # Try finding any elements with property-like content
@@ -356,26 +622,23 @@ class UKPropertyTrawler:
             
             print(f"  Found {len(listings)} potential listings on Spareroom")
             
-            for listing in listings[:20]:  # Limit to first 20 to avoid too many
+            for listing in listings[:500]:  # Limit to first 500 properties per search
                 try:
-                    # Try to find title/link
-                    title_elem = (
-                        listing.find('a', class_=re.compile(r'title|heading|name', re.I)) or
-                        listing.find('h2') or
-                        listing.find('h3') or
-                        listing.find('a', href=True)
-                    )
+                    # Spareroom structure: listing-card with listing-card__link
+                    link_elem = listing.find('a', class_=re.compile(r'listing-card__link', re.I))
+                    if not link_elem:
+                        link_elem = listing.find('a', href=True)
                     
-                    if not title_elem:
+                    if not link_elem:
                         continue
                     
-                    title = title_elem.get_text(strip=True)
+                    # Get title from link title attribute or text
+                    title = link_elem.get('title', '') or link_elem.get_text(strip=True)
                     if not title or len(title) < 5:
                         continue
                     
                     # Get URL
-                    link_elem = listing.find('a', href=True)
-                    url = urljoin(base_url, link_elem['href']) if link_elem else ""
+                    url = urljoin(base_url, link_elem['href']) if link_elem.get('href') else ""
                     
                     # Try to find price
                     price_elem = (
@@ -438,9 +701,9 @@ class UKPropertyTrawler:
                         has_balcony=has_balcony,
                         image_url=self._extract_image_url(listing, base_url)
                     )
-                
-                properties.append(property_obj)
-                
+                    
+                    properties.append(property_obj)
+                    
                 except Exception as e:
                     print(f"    Error parsing Spareroom listing: {e}")
                     continue
@@ -465,7 +728,7 @@ class UKPropertyTrawler:
             # OpenRent uses a search endpoint
             search_url = f"{base_url}/properties-to-rent?term={quote(location)}"
             
-            response = self.session.get(search_url, timeout=15)
+            response = self._get_with_session(search_url, timeout=15)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.content, 'html.parser')
@@ -486,7 +749,7 @@ class UKPropertyTrawler:
             print(f"  Found {len(listings)} potential listings on OpenRent")
             
             extracted_count = 0
-            for listing in listings[:30]:  # Increase limit to 30
+            for listing in listings[:500]:  # Limit to first 500 properties per search
                 try:
                     # Extract all text first for better parsing
                     all_text = listing.get_text(separator=' ', strip=True)
@@ -661,51 +924,94 @@ class UKPropertyTrawler:
         
         try:
             base_url = "https://www.gumtree.com"
-            # Gumtree property search URL
-            search_url = f"{base_url}/property-for-rent/uk/{quote(location)}"
             
-            response = self.session.get(search_url, timeout=15, allow_redirects=True)
-            response.raise_for_status()
+            # Simple, working approach - start with basic search
+            # First visit homepage to establish session
+            try:
+                self._get_with_session(f"{base_url}/", timeout=10)
+                time.sleep(1)
+            except:
+                pass
+            
+            # Try the simplest working URL patterns first
+            search_urls = [
+                # Simple search query (this was working before)
+                f"{base_url}/search?q={quote('property rent ' + location)}",
+                f"{base_url}/search?q={quote('rent ' + location)}",
+                f"{base_url}/search?q={quote(location + ' property')}",
+                f"{base_url}/search?q={quote(location + ' ' + property_type)}",
+                # Category-based (if simple doesn't work)
+                f"{base_url}/search?category=property-for-rent&q={quote(location)}",
+                f"{base_url}/property-for-rent/{quote(location)}",
+            ]
+            
+            response = None
+            for search_url in search_urls:
+                try:
+                    response = self._get_with_session(search_url, timeout=15)
+                    if response.status_code == 200 and len(response.content) > 5000:
+                        break
+                    time.sleep(0.5)
+                except:
+                    continue
+            
+            if not response or response.status_code != 200:
+                print(f"  Could not access Gumtree (tried {len(search_urls)} URL formats)")
+                return properties
             
             soup = BeautifulSoup(response.content, 'html.parser')
             
-            # Try multiple selectors for Gumtree listings
-            listings = (
-                soup.find_all('article', class_=re.compile(r'listing|result|item', re.I)) or
-                soup.find_all('div', class_=re.compile(r'listing|result|item', re.I)) or
-                soup.find_all('a', href=re.compile(r'/property-for-rent/', re.I)) or
-                soup.find_all('li', class_=re.compile(r'listing|result', re.I)) or
-                []
-            )
+            # Simple selector - this was working before
+            # Gumtree uses article elements with 'listing-tile' class
+            listings = soup.find_all('article', class_=re.compile(r'listing-tile', re.I))
             
+            # Fallback to other article patterns
             if not listings:
-                listings = soup.find_all(['div', 'article', 'li'], class_=re.compile(r'card|box|tile', re.I))
+                listings = soup.find_all('article', class_=re.compile(r'listing|result', re.I))
+            
+            # Fallback to div patterns
+            if not listings:
+                listings = soup.find_all('div', class_=re.compile(r'listing|result|item', re.I))
+            
+            # Last resort: find by property links
+            if not listings:
+                property_links = soup.find_all('a', href=re.compile(r'/property-for-rent/', re.I))
+                if property_links:
+                    listings = []
+                    for link in property_links[:500]:
+                        parent = link.find_parent(['article', 'div', 'li'])
+                        if parent and parent not in listings:
+                            listings.append(parent)
             
             print(f"  Found {len(listings)} potential listings on Gumtree")
             
-            for listing in listings[:25]:
+            for listing in listings[:500]:  # Limit to first 500 properties per search
                 try:
                     all_text = listing.get_text(separator=' ', strip=True)
                     if len(all_text) < 5:
                         continue
                     
-                    # Find title
-                    title_elem = (
-                        listing.find('h2') or
-                        listing.find('h3') or
-                        listing.find('a', class_=re.compile(r'title|name|heading', re.I)) or
-                        listing.find('a', href=True)
-                    )
+                    # Gumtree structure: find title and link
+                    # Try to find link first (usually contains title)
+                    link_elem = listing.find('a', href=True)
+                    if not link_elem:
+                        # Try finding title in headings
+                        title_elem = listing.find('h2') or listing.find('h3')
+                        if not title_elem:
+                            continue
+                        title = title_elem.get_text(strip=True)
+                    else:
+                        # Get title from link text or aria-label
+                        title = (
+                            link_elem.get('aria-label', '') or
+                            link_elem.get('title', '') or
+                            link_elem.get_text(strip=True)
+                        )
                     
-                    if not title_elem:
-                        continue
-                    
-                    title = title_elem.get_text(strip=True)
                     if not title or len(title) < 5:
                         continue
                     
                     # Get URL
-                    link_elem = listing.find('a', href=True)
                     url = ""
                     if link_elem:
                         href = link_elem.get('href', '')
@@ -713,6 +1019,11 @@ class UKPropertyTrawler:
                             url = href
                         else:
                             url = urljoin(base_url, href)
+                    elif 'href' in str(listing):
+                        # Try to extract from data attributes
+                        data_link = listing.get('data-href') or listing.get('data-url')
+                        if data_link:
+                            url = urljoin(base_url, data_link) if not data_link.startswith('http') else data_link
                     
                     # Extract price
                     price = self._extract_price(all_text or title)
@@ -777,11 +1088,34 @@ class UKPropertyTrawler:
         
         try:
             base_url = "https://www.onthemarket.com"
-            # OnTheMarket search URL
-            search_url = f"{base_url}/to-rent/property/{quote(location.lower())}/"
+            # OnTheMarket search URLs - try multiple formats
+            search_urls = [
+                f"{base_url}/to-rent/property/{quote(location.lower())}/",
+                f"{base_url}/to-rent/property/{quote(location)}/",
+                f"{base_url}/to-rent/?locationIdentifier={quote(location)}",
+                f"{base_url}/to-rent/?q={quote(location)}",
+            ]
             
-            response = self.session.get(search_url, timeout=15, allow_redirects=True)
-            response.raise_for_status()
+            # First visit main page to establish session
+            try:
+                self.session.get(f"{base_url}/", timeout=10, allow_redirects=True)
+                time.sleep(1)
+                self.session.headers.update({'Referer': f"{base_url}/"})
+            except:
+                pass
+            
+            response = None
+            for search_url in search_urls:
+                try:
+                    response = self.session.get(search_url, timeout=15, allow_redirects=True)
+                    if response.status_code == 200 and len(response.content) > 5000:
+                        break
+                except:
+                    continue
+            
+            if not response or response.status_code != 200:
+                print(f"  Could not access OnTheMarket (tried {len(search_urls)} URL formats)")
+                return properties
             
             soup = BeautifulSoup(response.content, 'html.parser')
             
@@ -799,7 +1133,7 @@ class UKPropertyTrawler:
             
             print(f"  Found {len(listings)} potential listings on OnTheMarket")
             
-            for listing in listings[:25]:
+            for listing in listings[:500]:  # Limit to first 500 properties per search
                 try:
                     all_text = listing.get_text(separator=' ', strip=True)
                     if len(all_text) < 5:
@@ -890,17 +1224,51 @@ class UKPropertyTrawler:
     def scrape_primelocation(self, location: str, property_type: str = "house", max_pages: int = 5) -> List[Property]:
         """
         Scrape PrimeLocation for property listings.
+        Using simplified approach like Gumtree.
         """
         properties = []
         print(f"Scraping PrimeLocation for {property_type}s in {location}...")
         
         try:
             base_url = "https://www.primelocation.com"
-            # PrimeLocation search URL
-            search_url = f"{base_url}/to-rent/property/{quote(location.lower())}/"
             
-            response = self.session.get(search_url, timeout=15, allow_redirects=True)
-            response.raise_for_status()
+            # Simple approach - start with basic URLs (like we did for Gumtree)
+            # First visit homepage to establish session
+            try:
+                self._get_with_session(f"{base_url}/", timeout=10)
+                time.sleep(1)
+            except:
+                pass
+            
+            # Try the simplest URL patterns first
+            search_urls = [
+                # Simple search patterns
+                f"{base_url}/to-rent/?q={quote(location)}",
+                f"{base_url}/to-rent/?locationIdentifier={quote(location)}",
+                f"{base_url}/to-rent/property/{quote(location.lower())}/",
+                f"{base_url}/to-rent/property/{quote(location)}/",
+                f"{base_url}/to-rent/{quote(location.lower())}/",
+            ]
+            
+            response = None
+            for search_url in search_urls:
+                try:
+                    response = self._get_with_session(search_url, timeout=15)
+                    if response.status_code == 200 and len(response.content) > 5000:
+                        break
+                    elif response.status_code == 403:
+                        # Blocked - try next URL
+                        continue
+                    time.sleep(0.5)
+                except:
+                    continue
+            
+            if not response or response.status_code != 200:
+                if response and response.status_code == 403:
+                    print(f"  PrimeLocation blocked access (403 Forbidden)")
+                else:
+                    print(f"  Could not access PrimeLocation (tried {len(search_urls)} URL formats)")
+                return properties
             
             soup = BeautifulSoup(response.content, 'html.parser')
             
@@ -918,7 +1286,7 @@ class UKPropertyTrawler:
             
             print(f"  Found {len(listings)} potential listings on PrimeLocation")
             
-            for listing in listings[:25]:
+            for listing in listings[:500]:  # Limit to first 500 properties per search
                 try:
                     all_text = listing.get_text(separator=' ', strip=True)
                     if len(all_text) < 5:
@@ -1017,7 +1385,7 @@ class UKPropertyTrawler:
             # Construct search URL (this is a template - actual URLs vary by site)
             search_url = f"{base_url}?location={quote(location)}&type={property_type}"
             
-            response = self.session.get(search_url, timeout=10)
+            response = self._get_with_session(search_url, timeout=10)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.content, 'html.parser')
@@ -1081,9 +1449,135 @@ class UKPropertyTrawler:
         
         return properties
     
+    def calculate_match_score(self, prop: Property, filters: dict) -> float:
+        """
+        Calculate a match score (0-100) for a property based on how well it matches search criteria.
+        Higher score = better match.
+        """
+        score = 0.0
+        max_score = 100.0
+        
+        # Price match (30 points max)
+        if prop.price is not None:
+            min_price = filters.get('min_price', 0)
+            max_price = filters.get('max_price', float('inf'))
+            
+            if min_price is not None and max_price is not None and max_price != float('inf'):
+                # Ideal price is middle of range
+                ideal_price = (min_price + max_price) / 2
+                price_range = max_price - min_price
+                
+                if price_range > 0:
+                    # Score based on how close to ideal price
+                    price_diff = abs(prop.price - ideal_price)
+                    price_score = max(0, 30 * (1 - (price_diff / price_range)))
+                    score += price_score
+                else:
+                    # Exact match
+                    if min_price <= prop.price <= max_price:
+                        score += 30
+            elif min_price is not None:
+                # Only min price specified - lower is better
+                if prop.price >= min_price:
+                    score += 30
+            elif max_price is not None and max_price != float('inf'):
+                # Only max price specified
+                if prop.price <= max_price:
+                    score += 30
+            else:
+                # No price filter - give base score
+                score += 15
+        else:
+            # No price data - penalty
+            score += 5
+        
+        # Bedrooms match (20 points max)
+        if filters.get('min_bedrooms') is not None or filters.get('max_bedrooms') is not None:
+            if prop.bedrooms is not None:
+                min_bed = filters.get('min_bedrooms', 0)
+                max_bed = filters.get('max_bedrooms', float('inf'))
+                
+                if min_bed <= prop.bedrooms <= max_bed:
+                    # Exact match gets full points, close match gets partial
+                    ideal_bed = (min_bed + max_bed) / 2 if max_bed != float('inf') else min_bed
+                    if prop.bedrooms == ideal_bed:
+                        score += 20
+                    else:
+                        score += 15  # Within range but not ideal
+                else:
+                    score += 5  # Outside range but has data
+            else:
+                score += 2  # No bedroom data
+        else:
+            # No bedroom filter - bonus if data exists
+            if prop.bedrooms is not None:
+                score += 10
+        
+        # Bathrooms match (20 points max)
+        if filters.get('min_bathrooms') is not None or filters.get('max_bathrooms') is not None:
+            if prop.bathrooms is not None:
+                min_bath = filters.get('min_bathrooms', 0)
+                max_bath = filters.get('max_bathrooms', float('inf'))
+                
+                if min_bath <= prop.bathrooms <= max_bath:
+                    ideal_bath = (min_bath + max_bath) / 2 if max_bath != float('inf') else min_bath
+                    if prop.bathrooms == ideal_bath:
+                        score += 20
+                    else:
+                        score += 15
+                else:
+                    score += 5
+            else:
+                score += 2
+        else:
+            if prop.bathrooms is not None:
+                score += 10
+        
+        # Garden match (10 points)
+        if filters.get('has_garden') is True:
+            if prop.has_garden is True:
+                score += 10
+            elif prop.has_garden is False:
+                score += 0  # Explicitly doesn't have garden when required
+            else:
+                score += 3  # Unknown - give small benefit of doubt
+        elif filters.get('has_garden') is False:
+            # Garden not required, but having it is still a bonus
+            if prop.has_garden is True:
+                score += 3
+        
+        # Balcony match (10 points)
+        if filters.get('has_balcony') is True:
+            if prop.has_balcony is True:
+                score += 10
+            elif prop.has_balcony is False:
+                score += 0
+            else:
+                score += 3
+        elif filters.get('has_balcony') is False:
+            if prop.has_balcony is True:
+                score += 3
+        
+        # Data completeness bonus (10 points)
+        completeness = 0
+        if prop.price is not None:
+            completeness += 2
+        if prop.bedrooms is not None:
+            completeness += 2
+        if prop.bathrooms is not None:
+            completeness += 2
+        if prop.image_url:
+            completeness += 2
+        if prop.postcode:
+            completeness += 2
+        score += completeness
+        
+        # Normalize to 0-100
+        return min(100.0, max(0.0, score))
+    
     def filter_properties(self, properties: List[Property], filters: dict) -> List[Property]:
         """
-        Filter properties based on search criteria.
+        Filter properties based on search criteria and calculate match scores.
         """
         filtered = []
         
@@ -1140,7 +1634,43 @@ class UKPropertyTrawler:
                 if prop.price is not None and prop.price > filters['max_price']:
                     continue
             
+            # Keywords filter (at least some keywords must match, with typo tolerance)
+            if filters.get('keywords'):
+                keywords_str = filters['keywords'].lower().strip()
+                if keywords_str:
+                    # Combine all searchable text
+                    searchable_text = f"{prop.title} {prop.address} {prop.description}".lower()
+                    
+                    # Split keywords by comma or space
+                    keywords = [k.strip() for k in re.split(r'[,\s]+', keywords_str) if k.strip()]
+                    
+                    if keywords:
+                        # Count how many keywords match (with typo tolerance)
+                        matching_keywords = []
+                        for kw in keywords:
+                            # First try exact match
+                            if kw in searchable_text:
+                                matching_keywords.append(kw)
+                            else:
+                                # Try fuzzy match with typo tolerance
+                                if self._fuzzy_match_keyword(kw, searchable_text):
+                                    matching_keywords.append(kw)
+                        
+                        match_count = len(matching_keywords)
+                        
+                        # Require at least 50% of keywords to match, or at least 1 if there's only 1-2 keywords
+                        min_required = 1 if len(keywords) <= 2 else int(len(keywords) * 0.5) + (1 if len(keywords) % 2 == 1 else 0)
+                        
+                        if match_count < min_required:
+                            continue
+            
+            # Calculate match score
+            prop.match_score = self.calculate_match_score(prop, filters)
+            
             filtered.append(prop)
+        
+        # Sort by match score (highest first)
+        filtered.sort(key=lambda p: p.match_score or 0, reverse=True)
         
         return filtered
     

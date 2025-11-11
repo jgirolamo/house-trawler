@@ -7,8 +7,12 @@ from trawler import UKPropertyTrawler
 from storage import PropertyStorage
 
 
-def load_config(config_path: str = "config.json") -> dict:
+def load_config(config_path: str = None) -> dict:
     """Load configuration from JSON file."""
+    # Check for temp config from API call
+    if config_path is None:
+        config_path = os.environ.get('CONFIG_FILE', 'config.json')
+    
     if not os.path.exists(config_path):
         print(f"Config file {config_path} not found. Using defaults.")
         return {
@@ -31,8 +35,9 @@ def main():
     print("UK House and Flats Trawler")
     print("=" * 60)
     
-    # Load configuration
-    config = load_config()
+    # Load configuration (check for temp config from API)
+    config_path = os.environ.get('CONFIG_FILE', 'config.json')
+    config = load_config(config_path)
     search_params = config.get("search_params", {})
     output_dir = config.get("output_dir", "output")
     delay = config.get("delay_between_requests", 2)
@@ -58,7 +63,8 @@ def main():
         'max_price': search_params.get("max_price"),
         'exclude_student_accommodation': search_params.get("exclude_student_accommodation", False),
         'exclude_house_shares': search_params.get("exclude_house_shares", False),
-        'exclude_retirement': search_params.get("exclude_retirement", False)
+        'exclude_retirement': search_params.get("exclude_retirement", False),
+        'keywords': search_params.get("keywords")
     }
     
     # Remove None values from filters dict (keeps True/False for exclude_ keys, and non-None for others)

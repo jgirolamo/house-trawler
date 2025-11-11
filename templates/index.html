@@ -97,7 +97,7 @@
         
         .property-card {
             background: white;
-            border-radius: 10px;
+            border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: transform 0.2s, box-shadow 0.2s;
@@ -207,6 +207,87 @@
             font-weight: 600;
         }
         
+        .match-score {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .match-score-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .match-score-bar {
+            flex: 1;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            overflow: hidden;
+            max-width: 150px;
+        }
+        
+        .match-score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 50%, #FFC107 70%, #FF9800 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .match-score-high { background: linear-gradient(90deg, #4CAF50 0%, #8BC34A 100%); }
+        .match-score-medium { background: linear-gradient(90deg, #FFC107 0%, #FF9800 100%); }
+        .match-score-low { background: linear-gradient(90deg, #FF9800 0%, #F44336 100%); }
+        
+        .keyword-indicator {
+            margin-top: 10px;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        
+        .keyword-indicator-title {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .keyword-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .keyword-tag {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .keyword-tag.matched {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .keyword-tag.missing {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
         .property-link {
             color: #667eea;
             text-decoration: none;
@@ -228,11 +309,260 @@
         
         .search-box {
             width: 100%;
-            padding: 12px;
+            padding: 12px 16px;
             border: 2px solid #ddd;
-            border-radius: 5px;
+            border-radius: 25px;
             font-size: 16px;
             margin-bottom: 20px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .radius-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .radius-selector label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #555;
+            white-space: nowrap;
+        }
+        
+        .radius-selector select {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            border-radius: 15px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            outline: none;
+        }
+        
+        .radius-selector select:focus {
+            border-color: #667eea;
+        }
+        
+        .search-button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            white-space: nowrap;
+        }
+        
+        .search-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        
+        .search-button:active {
+            transform: translateY(0);
+        }
+        
+        .search-button:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+        
+        .search-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.7;
+        }
+        
+        /* Popup Modal */
+        .popup-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .popup-modal.show {
+            display: flex;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .popup-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            color: white;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s ease;
+            position: relative;
+        }
+        
+        .popup-content::before {
+            content: '🏠';
+            font-size: 80px;
+            display: block;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .popup-content h2 {
+            margin: 0 0 15px 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .popup-content p {
+            margin: 10px 0;
+            font-size: 16px;
+            line-height: 1.6;
+            opacity: 0.95;
+        }
+        
+        .popup-messages {
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: 600;
+            min-height: 50px;
+        }
+        
+        .popup-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        
+        .popup-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .popup-progress {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+        
+        .popup-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #fff 0%, #e8f5e9 50%, #fff 100%);
+            background-size: 200% 100%;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.5s ease;
+            animation: shimmer 2s infinite;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .pagination button {
+            padding: 10px 16px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #667eea;
+            transition: all 0.2s;
+        }
+        
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .pagination-info {
+            padding: 10px 20px;
+            color: #666;
+            font-size: 14px;
         }
     </style>
 </head>
@@ -263,7 +593,10 @@
         </header>
         
         <div class="filters">
-            <input type="text" class="search-box" id="searchBox" placeholder="Search properties by title, address, or description...">
+            <div class="search-container" style="display: flex; gap: 10px; align-items: center;">
+                <input type="text" class="search-box" id="searchBox" placeholder="Search for properties (e.g., '2 bedroom flat in London')..." style="flex: 1;">
+                <button type="button" class="search-button" id="searchButton" onclick="runSearchWithTrawler()">🔍 Search & Scrape</button>
+            </div>
             <div class="filter-group">
                 <label>Source:</label>
                 <select id="filterSource">
@@ -299,6 +632,11 @@
                 <input type="number" id="minBathrooms" placeholder="Min" style="width: 80px;" min="0">
                 <span>to</span>
                 <input type="number" id="maxBathrooms" placeholder="Max" style="width: 80px;" min="0">
+            </div>
+            <div class="filter-group" style="margin-top: 15px;">
+                <label>Other Keywords:</label>
+                <input type="text" id="otherKeywords" placeholder="e.g., parking, furnished, pet-friendly" style="width: 300px; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                <span style="margin-left: 10px; color: #666; font-size: 12px;">Search in title, description, and address</span>
             </div>
         </div>
         
@@ -352,6 +690,23 @@
                     <div class="property-description">{{ prop.description[:150] }}{% if prop.description|length > 150 %}...{% endif %}</div>
                     {% endif %}
                     
+                    {% if prop.match_score is defined and prop.match_score is not none %}
+                    <div class="match-score">
+                        <span class="match-score-badge">⭐ {{ "%.0f"|format(prop.match_score) }}% Match</span>
+                        <div class="match-score-bar">
+                            {% set score_class = "match-score-high" if prop.match_score >= 70 else ("match-score-medium" if prop.match_score >= 40 else "match-score-low") %}
+                            <div class="match-score-fill {{ score_class }}" 
+                                 style="width: {{ prop.match_score }}%"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Keyword indicator (populated by JavaScript) -->
+                    <div class="keyword-indicator" id="keywordIndicator-{{ loop.index0 }}" style="display: none;">
+                        <div class="keyword-indicator-title">Keywords Match</div>
+                        <div class="keyword-tags" id="keywordTags-{{ loop.index0 }}"></div>
+                    </div>
+                    
                         <div class="property-footer">
                             <span class="property-source">{{ prop.source }}</span>
                             {% if prop.url %}
@@ -367,6 +722,28 @@
                     <p>Run the trawler to scrape properties first.</p>
                 </div>
             {% endif %}
+        </div>
+        
+        <!-- Pagination -->
+        <div class="pagination" id="pagination" style="display: none;">
+            <button id="prevPage" onclick="changePage(-1)">← Previous</button>
+            <div class="pagination-info" id="pageInfo">Page 1 of 1</div>
+            <button id="nextPage" onclick="changePage(1)">Next →</button>
+        </div>
+    </div>
+    
+    <!-- Popup Modal with Progress Bar -->
+    <div class="popup-modal" id="searchPopup">
+        <div class="popup-content">
+            <button class="popup-close" onclick="closePopup()">×</button>
+            <h2>🏡 Searching for Your Perfect Home!</h2>
+            <div class="popup-messages" id="popupMessage">
+                Starting your property search...
+            </div>
+            <p id="popupSubMessage">We're scouring the best property websites for you!</p>
+            <div class="popup-progress">
+                <div class="popup-progress-bar" id="popupProgress"></div>
+            </div>
         </div>
     </div>
     
@@ -395,28 +772,200 @@
             sourceSelect.appendChild(option);
         });
         
-        // Filter functionality
-        function filterProperties() {
-            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
-            const sourceFilter = document.getElementById('filterSource').value;
-            const typeFilter = document.getElementById('filterType').value;
-            const featuresFilter = document.getElementById('filterFeatures').value;
-            const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
-            const maxPrice = parseFloat(document.getElementById('maxPrice').value) || Infinity;
-            const minBedrooms = parseInt(document.getElementById('minBedrooms').value) || 0;
-            const maxBedrooms = parseInt(document.getElementById('maxBedrooms').value) || Infinity;
-            const minBathrooms = parseInt(document.getElementById('minBathrooms').value) || 0;
-            const maxBathrooms = parseInt(document.getElementById('maxBathrooms').value) || Infinity;
+        // Calculate distance between two UK postcodes/locations (simplified)
+        function calculateDistance(loc1, loc2) {
+            // This is a simplified distance calculation
+            // For accurate results, you'd need to use postcode coordinates
+            // For now, we'll do simple string matching
+            if (!loc1 || !loc2) return Infinity;
             
-            document.querySelectorAll('.property-card').forEach(card => {
+            const l1 = loc1.toLowerCase().trim();
+            const l2 = loc2.toLowerCase().trim();
+            
+            // If locations match exactly, distance is 0
+            if (l1 === l2) return 0;
+            
+            // If one location contains the other, assume close (within 5 miles)
+            if (l1.includes(l2) || l2.includes(l1)) return 2;
+            
+            // Extract postcode areas (first part of UK postcode)
+            const postcode1 = l1.match(/^[A-Z]{1,2}\d{1,2}/i);
+            const postcode2 = l2.match(/^[A-Z]{1,2}\d{1,2}/i);
+            
+            if (postcode1 && postcode2) {
+                const area1 = postcode1[0].toUpperCase();
+                const area2 = postcode2[0].toUpperCase();
+                
+                // Same postcode area = within 10 miles
+                if (area1 === area2) return 5;
+                
+                // Adjacent areas = within 20 miles
+                if (Math.abs(area1.charCodeAt(0) - area2.charCodeAt(0)) <= 1) return 15;
+            }
+            
+            // Different locations, assume far
+            return 100;
+        }
+        
+        // Typo tolerance: Calculate Levenshtein distance (simple version)
+        function levenshteinDistance(str1, str2) {
+            const len1 = str1.length;
+            const len2 = str2.length;
+            const matrix = [];
+            
+            // Initialize matrix
+            for (let i = 0; i <= len1; i++) {
+                matrix[i] = [i];
+            }
+            for (let j = 0; j <= len2; j++) {
+                matrix[0][j] = j;
+            }
+            
+            // Fill matrix
+            for (let i = 1; i <= len1; i++) {
+                for (let j = 1; j <= len2; j++) {
+                    if (str1[i - 1] === str2[j - 1]) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j] + 1,     // deletion
+                            matrix[i][j - 1] + 1,     // insertion
+                            matrix[i - 1][j - 1] + 1  // substitution
+                        );
+                    }
+                }
+            }
+            
+            return matrix[len1][len2];
+        }
+        
+        // Check if a word matches with typo tolerance
+        function fuzzyMatch(searchWord, text) {
+            // Exact match first (fastest)
+            if (text.includes(searchWord)) {
+                return true;
+            }
+            
+            // For short words (1-3 chars), require exact match
+            if (searchWord.length <= 3) {
+                return false;
+            }
+            
+            // Split text into words
+            const words = text.split(/\s+/);
+            
+            // Check each word in the text
+            for (const word of words) {
+                // Skip very short words
+                if (word.length < 3) continue;
+                
+                // Calculate distance
+                const distance = levenshteinDistance(searchWord, word);
+                
+                // Allow 1 typo for words 4-6 chars, 2 typos for 7+ chars
+                const maxDistance = searchWord.length <= 6 ? 1 : 2;
+                
+                if (distance <= maxDistance) {
+                    return true;
+                }
+                
+                // Also check if search word is contained in word (or vice versa) with small difference
+                if (word.includes(searchWord) || searchWord.includes(word)) {
+                    const lengthDiff = Math.abs(word.length - searchWord.length);
+                    if (lengthDiff <= maxDistance) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        // Check if search query matches text with typo tolerance
+        function fuzzySearch(searchQuery, text) {
+            // If exact match, return true immediately
+            if (text.includes(searchQuery)) {
+                return true;
+            }
+            
+            // Split search query into words
+            const searchWords = searchQuery.split(/\s+/).filter(w => w.length > 0);
+            
+            // For single word searches, use fuzzy matching
+            if (searchWords.length === 1) {
+                return fuzzyMatch(searchWords[0], text);
+            }
+            
+            // For multi-word searches, at least 50% of words should match (with typos)
+            let matchedWords = 0;
+            for (const word of searchWords) {
+                if (fuzzyMatch(word, text)) {
+                    matchedWords++;
+                }
+            }
+            
+            // Require at least 50% of words to match, or 1 word if only 1-2 words total
+            const minRequired = searchWords.length <= 2 ? 1 : Math.ceil(searchWords.length * 0.5);
+            return matchedWords >= minRequired;
+        }
+        
+        // Filter functionality - Gumtree-style search with typo tolerance
+        function filterProperties() {
+            const searchBox = document.getElementById('searchBox');
+            if (!searchBox) {
+                return;
+            }
+            
+            // Gumtree-style: single search box - simple text search across all fields
+            const searchQuery = (searchBox.value || '').toLowerCase().trim();
+            
+            // Simple filters from dropdowns (if used)
+            const sourceFilter = (document.getElementById('filterSource')?.value || '').trim();
+            const typeFilter = (document.getElementById('filterType')?.value || '').trim();
+            const featuresFilter = (document.getElementById('filterFeatures')?.value || '').trim();
+            
+            // Simple filters from form inputs (only if entered)
+            const minPriceInput = document.getElementById('minPrice')?.value;
+            const maxPriceInput = document.getElementById('maxPrice')?.value;
+            const minPrice = minPriceInput ? parseFloat(minPriceInput) : null;
+            const maxPrice = maxPriceInput ? parseFloat(maxPriceInput) : null;
+            
+            const minBedroomsInput = document.getElementById('minBedrooms')?.value;
+            const maxBedroomsInput = document.getElementById('maxBedrooms')?.value;
+            const minBedrooms = minBedroomsInput ? parseInt(minBedroomsInput) : null;
+            const maxBedrooms = maxBedroomsInput ? parseInt(maxBedroomsInput) : null;
+            
+            const minBathroomsInput = document.getElementById('minBathrooms')?.value;
+            const maxBathroomsInput = document.getElementById('maxBathrooms')?.value;
+            const minBathrooms = minBathroomsInput ? parseInt(minBathroomsInput) : null;
+            const maxBathrooms = maxBathroomsInput ? parseInt(maxBathroomsInput) : null;
+            
+            const cards = document.querySelectorAll('.property-card');
+            const visibleCards = []; // Array to collect cards that pass all filters
+            
+            cards.forEach(card => {
                 let show = true;
                 
-                // Search filter
-                if (searchTerm) {
-                    const title = card.dataset.title || '';
-                    const address = card.dataset.address || '';
-                    const description = card.dataset.description || '';
-                    if (!title.includes(searchTerm) && !address.includes(searchTerm) && !description.includes(searchTerm)) {
+                // Gumtree-style: Text search with typo tolerance
+                if (searchQuery) {
+                    const title = (card.dataset.title || '').toLowerCase();
+                    const address = (card.dataset.address || '').toLowerCase();
+                    const description = (card.dataset.description || '').toLowerCase();
+                    
+                    // Also get visible text from the card
+                    const titleElem = card.querySelector('.property-title');
+                    const addressElem = card.querySelector('.property-address');
+                    const descElem = card.querySelector('.property-description');
+                    
+                    const titleText = titleElem ? titleElem.textContent.toLowerCase() : '';
+                    const addressText = addressElem ? addressElem.textContent.toLowerCase() : '';
+                    const descText = descElem ? descElem.textContent.toLowerCase() : '';
+                    
+                    // Combine all searchable text
+                    const searchableText = title + ' ' + address + ' ' + description + ' ' + titleText + ' ' + addressText + ' ' + descText;
+                    
+                    // Use fuzzy search with typo tolerance
+                    if (!fuzzySearch(searchQuery, searchableText)) {
                         show = false;
                     }
                 }
@@ -431,60 +980,461 @@
                     show = false;
                 }
                 
-                // Price filter
-                const price = parseFloat(card.dataset.price) || 0;
-                if (price < minPrice || price > maxPrice) {
-                    show = false;
-                }
-                
-                // Bedrooms filter
-                const bedrooms = parseInt(card.dataset.bedrooms) || 0;
-                if (bedrooms < minBedrooms || bedrooms > maxBedrooms) {
-                    show = false;
-                }
-                
-                // Bathrooms filter
-                const bathrooms = parseInt(card.dataset.bathrooms) || 0;
-                if (bathrooms < minBathrooms || bathrooms > maxBathrooms) {
-                    show = false;
-                }
-                
-                // Features filter
-                if (featuresFilter) {
-                    const hasGarden = card.querySelector('.feature-badge') && card.querySelector('.feature-badge').textContent.includes('Garden');
-                    const hasBalcony = card.querySelector('.feature-badge') && card.querySelector('.feature-badge').textContent.includes('Balcony');
-                    
-                    if (featuresFilter === 'garden' && !hasGarden) {
+                // Price filter (only apply if values are set)
+                if (minPrice !== null || maxPrice !== null) {
+                    const price = parseFloat(card.dataset.price);
+                    if (isNaN(price) || price <= 0) {
+                        // If price is not available and filters are set, hide it
                         show = false;
-                    }
-                    if (featuresFilter === 'balcony' && !hasBalcony) {
-                        show = false;
+                    } else {
+                        if (minPrice !== null && price < minPrice) {
+                            show = false;
+                        }
+                        if (maxPrice !== null && price > maxPrice) {
+                            show = false;
+                        }
                     }
                 }
                 
-                card.style.display = show ? 'block' : 'none';
+                // Bedrooms filter (only apply if values are set)
+                if (minBedrooms !== null || maxBedrooms !== null) {
+                    const bedrooms = parseInt(card.dataset.bedrooms);
+                    if (isNaN(bedrooms) || bedrooms <= 0) {
+                        // If bedrooms is not available and filters are set, hide it
+                        show = false;
+                    } else {
+                        if (minBedrooms !== null && bedrooms < minBedrooms) {
+                            show = false;
+                        }
+                        if (maxBedrooms !== null && bedrooms > maxBedrooms) {
+                            show = false;
+                        }
+                    }
+                }
+                
+                // Bathrooms filter (only apply if values are set)
+                if (minBathrooms !== null || maxBathrooms !== null) {
+                    const bathrooms = parseInt(card.dataset.bathrooms);
+                    if (isNaN(bathrooms) || bathrooms <= 0) {
+                        // If bathrooms is not available and filters are set, hide it
+                        show = false;
+                    } else {
+                        if (minBathrooms !== null && bathrooms < minBathrooms) {
+                            show = false;
+                        }
+                        if (maxBathrooms !== null && bathrooms > maxBathrooms) {
+                            show = false;
+                        }
+                    }
+                }
+                
+                // Other keywords filter removed - using main search box instead (Gumtree-style)
+                
+                // Only show card if it passed all filters
+                if (show) {
+                    visibleCards.push(card);
+                }
+                
+                // Hide card initially (pagination will show appropriate ones)
+                card.style.display = 'none';
+                card.style.visibility = 'hidden';
             });
             
-            // Update count
-            const visible = document.querySelectorAll('.property-card[style="display: block;"]').length;
-            document.querySelector('header p').innerHTML = `Found <strong>${visible}</strong> properties`;
+            // Apply pagination to filtered cards
+            applyPagination(visibleCards);
+            
+            // Update visible count
+            const countElement = document.querySelector('header p strong');
+            if (countElement) {
+                countElement.textContent = visibleCards.length;
+            }
+            
+            // Show "no results" message if needed
+            const noResultsMsg = document.getElementById('noResults');
+            if (visibleCards.length === 0) {
+                if (!noResultsMsg) {
+                    const msg = document.createElement('div');
+                    msg.id = 'noResults';
+                    msg.className = 'no-properties';
+                    msg.textContent = 'No properties match your search criteria. Try adjusting your filters.';
+                    document.getElementById('propertiesGrid').appendChild(msg);
+                } else {
+                    noResultsMsg.style.display = 'block';
+                }
+            } else {
+                if (noResultsMsg) {
+                    noResultsMsg.style.display = 'none';
+                }
+            }
         }
         
-        document.getElementById('searchBox').addEventListener('input', filterProperties);
-        document.getElementById('filterSource').addEventListener('change', filterProperties);
-        document.getElementById('filterType').addEventListener('change', filterProperties);
-        document.getElementById('filterFeatures').addEventListener('change', filterProperties);
-        document.getElementById('minPrice').addEventListener('input', filterProperties);
-        document.getElementById('maxPrice').addEventListener('input', filterProperties);
-        document.getElementById('minBedrooms').addEventListener('input', filterProperties);
-        document.getElementById('maxBedrooms').addEventListener('input', filterProperties);
-        document.getElementById('minBathrooms').addEventListener('input', filterProperties);
-        document.getElementById('maxBathrooms').addEventListener('input', filterProperties);
+        // Initialize event listeners when page loads
+        function initializeFilters() {
+            const searchBox = document.getElementById('searchBox');
+            const searchButton = document.getElementById('searchButton');
+            
+            if (searchBox) {
+                // Search as you type
+                searchBox.addEventListener('input', filterProperties);
+                searchBox.addEventListener('keyup', function(e) {
+                    if (e.key === 'Enter') {
+                        filterProperties();
+                    } else {
+                        filterProperties();
+                    }
+                });
+                searchBox.addEventListener('paste', function() { setTimeout(filterProperties, 10); });
+            }
+            
+            // Removed locationSearch and searchRadius - using single search box (Gumtree-style)
+            
+            if (searchButton) {
+                searchButton.addEventListener('click', filterProperties);
+            }
+            
+            const filterSource = document.getElementById('filterSource');
+            if (filterSource) filterSource.addEventListener('change', filterProperties);
+            
+            const filterType = document.getElementById('filterType');
+            if (filterType) filterType.addEventListener('change', filterProperties);
+            
+            const filterFeatures = document.getElementById('filterFeatures');
+            if (filterFeatures) filterFeatures.addEventListener('change', filterProperties);
+            
+            const minPrice = document.getElementById('minPrice');
+            if (minPrice) minPrice.addEventListener('input', filterProperties);
+            
+            const maxPrice = document.getElementById('maxPrice');
+            if (maxPrice) maxPrice.addEventListener('input', filterProperties);
+            
+            const otherKeywords = document.getElementById('otherKeywords');
+            if (otherKeywords) {
+                otherKeywords.addEventListener('input', filterProperties);
+                otherKeywords.addEventListener('keyup', function(e) {
+                    if (e.key === 'Enter') {
+                        filterProperties();
+                    }
+                });
+            }
+            
+            const minBedrooms = document.getElementById('minBedrooms');
+            if (minBedrooms) minBedrooms.addEventListener('input', filterProperties);
+            
+            const maxBedrooms = document.getElementById('maxBedrooms');
+            if (maxBedrooms) maxBedrooms.addEventListener('input', filterProperties);
+            
+            const minBathrooms = document.getElementById('minBathrooms');
+            if (minBathrooms) minBathrooms.addEventListener('input', filterProperties);
+            
+            const maxBathrooms = document.getElementById('maxBathrooms');
+            if (maxBathrooms) maxBathrooms.addEventListener('input', filterProperties);
+        }
+        
+        // Run when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeFilters);
+        } else {
+            // DOM is already loaded
+            initializeFilters();
+        }
         
         // Helper for contains check
         Element.prototype.contains = function(text) {
             return this.textContent.includes(text);
         };
+        
+        // Pagination variables
+        let currentPage = 1;
+        const propertiesPerPage = 25;
+        
+        // Apply pagination to visible cards
+        function applyPagination(visibleCards) {
+            const totalPages = Math.ceil(visibleCards.length / propertiesPerPage);
+            const pagination = document.getElementById('pagination');
+            const pageInfo = document.getElementById('pageInfo');
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+            
+            if (visibleCards.length === 0) {
+                pagination.style.display = 'none';
+                return;
+            }
+            
+            // Reset to page 1 if current page is out of bounds
+            if (currentPage > totalPages) {
+                currentPage = 1;
+            }
+            
+            // Show/hide pagination
+            if (totalPages > 1) {
+                pagination.style.display = 'flex';
+            } else {
+                pagination.style.display = 'none';
+            }
+            
+            // Update page info
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages} (${visibleCards.length} properties)`;
+            
+            // Update button states
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage === totalPages;
+            
+            // Calculate which cards to show
+            const startIndex = (currentPage - 1) * propertiesPerPage;
+            const endIndex = startIndex + propertiesPerPage;
+            
+            // Hide all cards first
+            visibleCards.forEach(card => {
+                card.style.display = 'none';
+            });
+            
+            // Show cards for current page
+            visibleCards.slice(startIndex, endIndex).forEach(card => {
+                card.style.display = '';
+            });
+        }
+        
+        // Change page
+        function changePage(direction) {
+            const allCards = Array.from(document.querySelectorAll('.property-card'));
+            const visibleCards = allCards.filter(card => {
+                return card.style.visibility !== 'hidden';
+            });
+            
+            const totalPages = Math.ceil(visibleCards.length / propertiesPerPage);
+            
+            if (direction === 1 && currentPage < totalPages) {
+                currentPage++;
+            } else if (direction === -1 && currentPage > 1) {
+                currentPage--;
+            }
+            
+            applyPagination(visibleCards);
+            
+            // Scroll to top of properties grid
+            document.getElementById('propertiesGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        // Initialize pagination on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                const allCards = document.querySelectorAll('.property-card');
+                if (allCards.length > 0) {
+                    const visibleCards = Array.from(allCards);
+                    applyPagination(visibleCards);
+                }
+            });
+        } else {
+            const allCards = document.querySelectorAll('.property-card');
+            if (allCards.length > 0) {
+                const visibleCards = Array.from(allCards);
+                applyPagination(visibleCards);
+            }
+        }
+        
+        // Positive messages for house search
+        const positiveMessages = [
+            "🏠 Searching through thousands of properties...",
+            "🔍 Finding homes that match your criteria...",
+            "✨ Discovering hidden gems in your area...",
+            "🌟 Matching properties to your preferences...",
+            "🏡 Exploring beautiful homes for you...",
+            "💎 Uncovering the perfect property matches...",
+            "🎯 Narrowing down the best options...",
+            "🌺 Finding properties with gardens and balconies...",
+            "⭐ Calculating match scores for each property...",
+            "🎉 Almost done! Preparing your results..."
+        ];
+        
+        let messageIndex = 0;
+        let messageInterval = null;
+        let progressInterval = null;
+        
+        // Show popup with positive messages and progress bar
+        function showSearchPopup() {
+            const popup = document.getElementById('searchPopup');
+            const messageEl = document.getElementById('popupMessage');
+            const subMessageEl = document.getElementById('popupSubMessage');
+            const progressBar = document.getElementById('popupProgress');
+            
+            popup.classList.add('show');
+            messageIndex = 0;
+            progressBar.style.width = '0%';
+            messageEl.textContent = positiveMessages[0];
+            
+            // Cycle through positive messages
+            messageInterval = setInterval(() => {
+                if (messageIndex < positiveMessages.length - 1) {
+                    messageIndex++;
+                    messageEl.textContent = positiveMessages[messageIndex];
+                }
+            }, 3000); // Change message every 3 seconds
+            
+            // Simulate progress (will be updated by actual progress)
+            let progress = 0;
+            progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 2;
+                    progressBar.style.width = progress + '%';
+                }
+            }, 1000);
+        }
+        
+        // Close popup
+        function closePopup() {
+            const popup = document.getElementById('searchPopup');
+            popup.classList.remove('show');
+            if (messageInterval) {
+                clearInterval(messageInterval);
+                messageInterval = null;
+            }
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+        }
+        
+        // Run search with trawler (using form data)
+        function runSearchWithTrawler() {
+            // Disable search button while running
+            const searchBtn = document.getElementById('searchButton');
+            if (!searchBtn || searchBtn.disabled) {
+                return; // Already running or button not found
+            }
+            
+            searchBtn.disabled = true;
+            searchBtn.textContent = '⏳ Searching...';
+            
+            // Collect form data - use search query directly like Gumtree
+            const searchQuery = (document.getElementById('searchBox')?.value || '').trim();
+            
+            // Extract location from search query (look for "in London", "near Manchester", etc.)
+            const locationMatch = searchQuery.match(/\b(in|near|at)\s+([a-z\s]+?)(?:\s|$)/i);
+            const locationFromQuery = locationMatch ? locationMatch[2].trim() : '';
+            const locationSearch = locationFromQuery || 'London'; // Default to London if no location found
+            
+            const searchParams = {
+                locations: [locationSearch],
+                keywords: searchQuery || null, // Pass the full search query as keywords
+                min_price: parseFloat(document.getElementById('minPrice')?.value) || 0,
+                max_price: parseFloat(document.getElementById('maxPrice')?.value) || 1000000,
+                property_types: [],
+                min_bedrooms: document.getElementById('minBedrooms')?.value ? parseInt(document.getElementById('minBedrooms').value) : null,
+                max_bedrooms: document.getElementById('maxBedrooms')?.value ? parseInt(document.getElementById('maxBedrooms').value) : null,
+                min_bathrooms: document.getElementById('minBathrooms')?.value ? parseInt(document.getElementById('minBathrooms').value) : null,
+                max_bathrooms: document.getElementById('maxBathrooms')?.value ? parseInt(document.getElementById('maxBathrooms').value) : null,
+                has_garden: document.getElementById('filterFeatures')?.value === 'garden' ? true : null,
+                has_balcony: document.getElementById('filterFeatures')?.value === 'balcony' ? true : null,
+                exclude_student_accommodation: true,
+                exclude_house_shares: true,
+                exclude_retirement: true,
+                max_pages: 20,
+                keywords: otherKeywords || null
+            };
+            
+            // Get property types
+            const typeFilter = document.getElementById('filterType')?.value;
+            if (typeFilter) {
+                searchParams.property_types = [typeFilter];
+            } else {
+                searchParams.property_types = ['house', 'flat'];
+            }
+            
+            // Show popup
+            showSearchPopup();
+            
+            const messageEl = document.getElementById('popupMessage');
+            const subMessageEl = document.getElementById('popupSubMessage');
+            const progressBar = document.getElementById('popupProgress');
+            
+            // Call API to run trawler with search params
+            fetch('/api/run-trawler', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ search_params: searchParams })
+            })
+            .then(response => response.json())
+            .then(data => {
+                messageEl.textContent = "✅ Search started! Finding properties...";
+                subMessageEl.textContent = "This may take a few minutes. We'll notify you when complete!";
+                progressBar.style.width = '10%';
+                
+                // Start polling for completion
+                let attempts = 0;
+                const maxAttempts = 120; // 10 minutes max
+                
+                const checkStatus = setInterval(() => {
+                    attempts++;
+                    
+                    // Update progress (gradual increase)
+                    const baseProgress = 10;
+                    const timeProgress = Math.min((attempts / maxAttempts) * 80, 85);
+                    const totalProgress = baseProgress + timeProgress;
+                    progressBar.style.width = totalProgress + '%';
+                    
+                    // Check if properties file was updated
+                    fetch('/api/properties')
+                        .then(res => res.json())
+                        .then(properties => {
+                            // Update message based on progress
+                            if (attempts < 10) {
+                                messageEl.textContent = positiveMessages[Math.min(Math.floor(attempts / 2), positiveMessages.length - 1)];
+                            } else if (attempts < 30) {
+                                messageEl.textContent = "🔍 Still searching... Finding more properties...";
+                            } else if (attempts < 60) {
+                                messageEl.textContent = "✨ Almost there! Processing results...";
+                            }
+                            
+                            if (attempts >= maxAttempts) {
+                                clearInterval(checkStatus);
+                                messageEl.textContent = "⏱️ Taking longer than expected...";
+                                subMessageEl.textContent = "Check the terminal for progress. You can close this and check back later.";
+                                progressBar.style.width = '95%';
+                                if (searchBtn) {
+                                    searchBtn.disabled = false;
+                                    searchBtn.textContent = '🔍 Search & Scrape';
+                                }
+                            }
+                        })
+                        .catch(() => {});
+                }, 5000); // Check every 5 seconds
+                
+                // After 2 minutes, assume done and refresh page with results
+                setTimeout(() => {
+                    clearInterval(checkStatus);
+                    if (messageInterval) clearInterval(messageInterval);
+                    if (progressInterval) clearInterval(progressInterval);
+                    
+                    progressBar.style.width = '100%';
+                    messageEl.textContent = "🎉 Search Complete!";
+                    subMessageEl.textContent = "Found amazing properties for you! Refreshing results...";
+                    
+                    // Re-enable button
+                    if (searchBtn) {
+                        searchBtn.disabled = false;
+                        searchBtn.textContent = '🔍 Search & Scrape';
+                    }
+                    
+                    // Reload page to show new results
+                    setTimeout(() => {
+                        closePopup();
+                        window.location.reload();
+                    }, 2000);
+                }, 120000); // 2 minutes
+            })
+            .catch(error => {
+                closePopup();
+                if (searchBtn) {
+                    searchBtn.disabled = false;
+                    searchBtn.textContent = '🔍 Search & Scrape';
+                }
+                alert('Error starting search: ' + error.message);
+                console.error('Error:', error);
+            });
+        }
+        
     </script>
 </body>
 </html>
