@@ -549,10 +549,11 @@ class UKPropertyTrawler:
         print(f"Note: Zoopla scraping requires careful implementation due to anti-scraping measures.")
         return properties
     
-    def scrape_spareroom(self, location: str, property_type: str = "whole property", max_pages: int = 5) -> List[Property]:
+    def scrape_spareroom(self, location: str, property_type: str = "whole property", max_pages: int = 5, filters: Optional[dict] = None) -> List[Property]:
         """
         Scrape Spareroom for whole properties.
         Searches for whole properties suitable for sharing.
+        Spareroom supports: search (location), flatshare_type, min_rent, max_rent, bedrooms
         """
         properties = []
         print(f"Scraping Spareroom for whole properties in {location}...")
@@ -568,21 +569,25 @@ class UKPropertyTrawler:
             except:
                 pass
             
-            # Try updated URL patterns - Spareroom uses different structure now
-            # Try searching for whole properties specifically
+            # Build URL with common parameters
+            params = [f"search={quote(location)}", "flatshare_type=whole_property"]
+            
+            # Add price filters if provided (Spareroom uses min_rent/max_rent)
+            if filters:
+                if filters.get('min_price'):
+                    params.append(f"min_rent={int(filters['min_price'])}")
+                if filters.get('max_price'):
+                    params.append(f"max_rent={int(filters['max_price'])}")
+                # Add bedrooms filter
+                if filters.get('min_bedrooms'):
+                    params.append(f"bedrooms={int(filters['min_bedrooms'])}")
+            
+            # Try updated URL patterns with filters
             search_urls = [
-                # Try the main search page with location
-                f"{base_url}/flatshare/?search={quote(location)}",
-                # Try whole property search
+                f"{base_url}/flatshare/?{'&'.join(params)}",
                 f"{base_url}/flatshare/?search={quote(location)}&flatshare_type=whole_property",
-                # Try with location parameter
-                f"{base_url}/flatshare/?location={quote(location)}",
-                # Try old format
-                f"{base_url}/flatshare/flatshare.pl?search_id=&search={quote(location)}",
-                # Try whole property with old format
-                f"{base_url}/flatshare/flatshare.pl?search_id=&flatshare_type=whole_property&search={quote(location)}",
-                # Try just the flatshare main page - we'll search in the HTML
-                f"{base_url}/flatshare/",
+                f"{base_url}/flatshare/?search={quote(location)}",
+                f"{base_url}/flatshare/flatshare.pl?search_id=&search={quote(location)}&flatshare_type=whole_property",
             ]
             
             response = None
@@ -715,18 +720,30 @@ class UKPropertyTrawler:
         
         return properties
     
-    def scrape_openrent(self, location: str, property_type: str = "house", max_pages: int = 5) -> List[Property]:
+    def scrape_openrent(self, location: str, property_type: str = "house", max_pages: int = 5, filters: Optional[dict] = None) -> List[Property]:
         """
         Scrape OpenRent for rental properties.
+        OpenRent supports: term (location), minPrice, maxPrice, bedrooms
         """
         properties = []
         print(f"Scraping OpenRent for {property_type}s in {location}...")
         
         try:
-            # OpenRent search URL
+            # OpenRent search URL with common parameters
             base_url = "https://www.openrent.co.uk"
-            # OpenRent uses a search endpoint
-            search_url = f"{base_url}/properties-to-rent?term={quote(location)}"
+            params = [f"term={quote(location)}"]
+            
+            # Add price filters if provided
+            if filters:
+                if filters.get('min_price'):
+                    params.append(f"minPrice={int(filters['min_price'])}")
+                if filters.get('max_price'):
+                    params.append(f"maxPrice={int(filters['max_price'])}")
+                # Add bedrooms filter (use min_bedrooms if available)
+                if filters.get('min_bedrooms'):
+                    params.append(f"bedrooms={int(filters['min_bedrooms'])}")
+            
+            search_url = f"{base_url}/properties-to-rent?{'&'.join(params)}"
             
             response = self._get_with_session(search_url, timeout=15)
             response.raise_for_status()
@@ -915,9 +932,10 @@ class UKPropertyTrawler:
         
         return properties
     
-    def scrape_gumtree(self, location: str, property_type: str = "house", max_pages: int = 5) -> List[Property]:
+    def scrape_gumtree(self, location: str, property_type: str = "house", max_pages: int = 5, filters: Optional[dict] = None) -> List[Property]:
         """
         Scrape Gumtree for property listings.
+        Gumtree supports: q (query), category, min_price, max_price, bedrooms
         """
         properties = []
         print(f"Scraping Gumtree for {property_type}s in {location}...")
@@ -933,15 +951,30 @@ class UKPropertyTrawler:
             except:
                 pass
             
-            # Try the simplest working URL patterns first
+            # Build search query with common parameters
+            search_query = f"property rent {location}"
+            if property_type:
+                search_query = f"{property_type} rent {location}"
+            
+            # Build URL with filters
+            params = [f"q={quote(search_query)}", "category=property-for-rent"]
+            
+            # Add price filters if provided
+            if filters:
+                if filters.get('min_price'):
+                    params.append(f"min_price={int(filters['min_price'])}")
+                if filters.get('max_price'):
+                    params.append(f"max_price={int(filters['max_price'])}")
+                # Add bedrooms to search query if specified
+                if filters.get('min_bedrooms'):
+                    search_query = f"{filters['min_bedrooms']} bedroom {search_query}"
+                    params[0] = f"q={quote(search_query)}"
+            
+            # Try URL patterns with filters
             search_urls = [
-                # Simple search query (this was working before)
+                f"{base_url}/search?{'&'.join(params)}",
+                f"{base_url}/search?q={quote(search_query)}&category=property-for-rent",
                 f"{base_url}/search?q={quote('property rent ' + location)}",
-                f"{base_url}/search?q={quote('rent ' + location)}",
-                f"{base_url}/search?q={quote(location + ' property')}",
-                f"{base_url}/search?q={quote(location + ' ' + property_type)}",
-                # Category-based (if simple doesn't work)
-                f"{base_url}/search?category=property-for-rent&q={quote(location)}",
                 f"{base_url}/property-for-rent/{quote(location)}",
             ]
             
@@ -1079,17 +1112,33 @@ class UKPropertyTrawler:
         
         return properties
     
-    def scrape_onthemarket(self, location: str, property_type: str = "house", max_pages: int = 5) -> List[Property]:
+    def scrape_onthemarket(self, location: str, property_type: str = "house", max_pages: int = 5, filters: Optional[dict] = None) -> List[Property]:
         """
         Scrape OnTheMarket for property listings.
+        OnTheMarket supports: locationIdentifier, minPrice, maxPrice, bedrooms
         """
         properties = []
         print(f"Scraping OnTheMarket for {property_type}s in {location}...")
         
         try:
             base_url = "https://www.onthemarket.com"
-            # OnTheMarket search URLs - try multiple formats
+            
+            # Build URL with common parameters
+            params = [f"locationIdentifier={quote(location)}"]
+            
+            # Add price filters if provided
+            if filters:
+                if filters.get('min_price'):
+                    params.append(f"minPrice={int(filters['min_price'])}")
+                if filters.get('max_price'):
+                    params.append(f"maxPrice={int(filters['max_price'])}")
+                # Add bedrooms filter
+                if filters.get('min_bedrooms'):
+                    params.append(f"bedrooms={int(filters['min_bedrooms'])}")
+            
+            # OnTheMarket search URLs with filters
             search_urls = [
+                f"{base_url}/to-rent/?{'&'.join(params)}",
                 f"{base_url}/to-rent/property/{quote(location.lower())}/",
                 f"{base_url}/to-rent/property/{quote(location)}/",
                 f"{base_url}/to-rent/?locationIdentifier={quote(location)}",
@@ -1689,21 +1738,21 @@ class UKPropertyTrawler:
                 print(f"  Searching for {prop_type}s...")
                 
                 if use_real_scrapers:
-                    # Scrape from real websites
+                    # Scrape from real websites - pass filters to each scraper
                     # Spareroom for whole properties
-                    spareroom_props = self.scrape_spareroom(location, prop_type, max_pages)
+                    spareroom_props = self.scrape_spareroom(location, prop_type, max_pages, filters)
                     all_properties.extend(spareroom_props)
                     
                     # OpenRent
-                    openrent_props = self.scrape_openrent(location, prop_type, max_pages)
+                    openrent_props = self.scrape_openrent(location, prop_type, max_pages, filters)
                     all_properties.extend(openrent_props)
                     
                     # Gumtree
-                    gumtree_props = self.scrape_gumtree(location, prop_type, max_pages)
+                    gumtree_props = self.scrape_gumtree(location, prop_type, max_pages, filters)
                     all_properties.extend(gumtree_props)
                     
                     # OnTheMarket
-                    onthemarket_props = self.scrape_onthemarket(location, prop_type, max_pages)
+                    onthemarket_props = self.scrape_onthemarket(location, prop_type, max_pages, filters)
                     all_properties.extend(onthemarket_props)
                     
                     # PrimeLocation

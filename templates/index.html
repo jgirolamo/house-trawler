@@ -595,7 +595,8 @@
         <div class="filters">
             <div class="search-container" style="display: flex; gap: 10px; align-items: center;">
                 <input type="text" class="search-box" id="searchBox" placeholder="Search for properties (e.g., '2 bedroom flat in London')..." style="flex: 1;">
-                <button type="button" class="search-button" id="searchButton" onclick="runSearchWithTrawler()">🔍 Search & Scrape</button>
+                <button type="button" class="search-button" id="searchButton" onclick="runSearchWithTrawler()">🔍 Scrape New</button>
+                <button type="button" class="search-button" id="filterButton" style="background: #4CAF50;">🔎 Filter</button>
             </div>
             <div class="filter-group">
                 <label>Source:</label>
@@ -619,9 +620,9 @@
             </div>
             <div class="filter-group" style="margin-top: 15px;">
                 <label>Price Range:</label>
-                <input type="number" id="minPrice" placeholder="Min £" style="width: 100px;">
+                <input type="number" id="minPrice" placeholder="Min £" style="width: 120px;" min="0" step="100">
                 <span>to</span>
-                <input type="number" id="maxPrice" placeholder="Max £" style="width: 100px;">
+                <input type="number" id="maxPrice" placeholder="Max £" style="width: 120px;" min="0" step="100">
                 
                 <label style="margin-left: 20px;">Bedrooms:</label>
                 <input type="number" id="minBedrooms" placeholder="Min" style="width: 80px;" min="0">
@@ -941,6 +942,10 @@
             const maxBathrooms = maxBathroomsInput ? parseInt(maxBathroomsInput) : null;
             
             const cards = document.querySelectorAll('.property-card');
+            if (!cards || cards.length === 0) {
+                return;
+            }
+            
             const visibleCards = []; // Array to collect cards that pass all filters
             
             cards.forEach(card => {
@@ -1033,12 +1038,15 @@
                 // Only show card if it passed all filters
                 if (show) {
                     visibleCards.push(card);
+                    card.style.visibility = 'visible';
+                } else {
+                    card.style.visibility = 'hidden';
+                    card.style.display = 'none';
                 }
-                
-                // Hide card initially (pagination will show appropriate ones)
-                card.style.display = 'none';
-                card.style.visibility = 'hidden';
             });
+            
+            // Reset to page 1 when filtering
+            currentPage = 1;
             
             // Apply pagination to filtered cards
             applyPagination(visibleCards);
@@ -1048,6 +1056,9 @@
             if (countElement) {
                 countElement.textContent = visibleCards.length;
             }
+            
+            // Debug: log how many cards are visible
+            console.log(`Filtered: ${visibleCards.length} properties visible out of ${cards.length} total`);
             
             // Show "no results" message if needed
             const noResultsMsg = document.getElementById('noResults');
@@ -1066,6 +1077,27 @@
                     noResultsMsg.style.display = 'none';
                 }
             }
+        }
+        
+        // Load real price ranges from properties
+        function loadPriceRanges() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(stats => {
+                    const minPriceInput = document.getElementById('minPrice');
+                    const maxPriceInput = document.getElementById('maxPrice');
+                    
+                    if (stats.min_price && minPriceInput && !minPriceInput.value) {
+                        minPriceInput.placeholder = `Min £${stats.min_price.toLocaleString()}`;
+                        minPriceInput.setAttribute('data-min', stats.min_price);
+                    }
+                    
+                    if (stats.max_price && maxPriceInput && !maxPriceInput.value) {
+                        maxPriceInput.placeholder = `Max £${stats.max_price.toLocaleString()}`;
+                        maxPriceInput.setAttribute('data-max', stats.max_price);
+                    }
+                })
+                .catch(err => console.error('Error loading price ranges:', err));
         }
         
         // Initialize event listeners when page loads
@@ -1088,8 +1120,10 @@
             
             // Removed locationSearch and searchRadius - using single search box (Gumtree-style)
             
-            if (searchButton) {
-                searchButton.addEventListener('click', filterProperties);
+            // Search button is for scraping, filter button is for filtering
+            const filterButton = document.getElementById('filterButton');
+            if (filterButton) {
+                filterButton.addEventListener('click', filterProperties);
             }
             
             const filterSource = document.getElementById('filterSource');
@@ -1106,6 +1140,9 @@
             
             const maxPrice = document.getElementById('maxPrice');
             if (maxPrice) maxPrice.addEventListener('input', filterProperties);
+            
+            // Load real price ranges
+            loadPriceRanges();
             
             const otherKeywords = document.getElementById('otherKeywords');
             if (otherKeywords) {
@@ -1149,19 +1186,29 @@
         
         // Apply pagination to visible cards
         function applyPagination(visibleCards) {
+            if (!visibleCards || visibleCards.length === 0) {
+                const pagination = document.getElementById('pagination');
+                if (pagination) pagination.style.display = 'none';
+                return;
+            }
+            
             const totalPages = Math.ceil(visibleCards.length / propertiesPerPage);
             const pagination = document.getElementById('pagination');
             const pageInfo = document.getElementById('pageInfo');
             const prevBtn = document.getElementById('prevPage');
             const nextBtn = document.getElementById('nextPage');
             
-            if (visibleCards.length === 0) {
-                pagination.style.display = 'none';
+            if (!pagination || !pageInfo || !prevBtn || !nextBtn) {
+                // If pagination elements don't exist, just show all cards
+                visibleCards.forEach(card => {
+                    card.style.display = '';
+                    card.style.visibility = 'visible';
+                });
                 return;
             }
             
             // Reset to page 1 if current page is out of bounds
-            if (currentPage > totalPages) {
+            if (currentPage > totalPages && totalPages > 0) {
                 currentPage = 1;
             }
             
@@ -1183,19 +1230,22 @@
             const startIndex = (currentPage - 1) * propertiesPerPage;
             const endIndex = startIndex + propertiesPerPage;
             
-            // Hide all cards first
+            // Hide all visible cards first
             visibleCards.forEach(card => {
                 card.style.display = 'none';
             });
             
             // Show cards for current page
-            visibleCards.slice(startIndex, endIndex).forEach(card => {
+            const cardsToShow = visibleCards.slice(startIndex, endIndex);
+            cardsToShow.forEach(card => {
                 card.style.display = '';
+                card.style.visibility = 'visible';
             });
         }
         
-        // Change page
+        // Change page - get currently visible cards
         function changePage(direction) {
+            // Get visible cards (those not hidden by filters)
             const allCards = Array.from(document.querySelectorAll('.property-card'));
             const visibleCards = allCards.filter(card => {
                 return card.style.visibility !== 'hidden';
@@ -1215,21 +1265,35 @@
             document.getElementById('propertiesGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         
-        // Initialize pagination on page load
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                const allCards = document.querySelectorAll('.property-card');
-                if (allCards.length > 0) {
-                    const visibleCards = Array.from(allCards);
-                    applyPagination(visibleCards);
-                }
-            });
-        } else {
+        // Initialize pagination on page load - show all cards initially
+        function initializePagination() {
             const allCards = document.querySelectorAll('.property-card');
             if (allCards.length > 0) {
+                // Make sure all cards are visible initially
+                allCards.forEach(card => {
+                    card.style.visibility = 'visible';
+                });
                 const visibleCards = Array.from(allCards);
+                // Reset to page 1
+                currentPage = 1;
                 applyPagination(visibleCards);
             }
+        }
+        
+        // Also call filterProperties on load to ensure proper initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                initializePagination();
+                // Small delay to ensure DOM is fully ready
+                setTimeout(function() {
+                    filterProperties();
+                }, 100);
+            });
+        } else {
+            initializePagination();
+            setTimeout(function() {
+                filterProperties();
+            }, 100);
         }
         
         // Positive messages for house search
@@ -1313,11 +1377,17 @@
             const locationFromQuery = locationMatch ? locationMatch[2].trim() : '';
             const locationSearch = locationFromQuery || 'London'; // Default to London if no location found
             
+            // Get price values - only set if actually entered
+            const minPriceInput = document.getElementById('minPrice')?.value;
+            const maxPriceInput = document.getElementById('maxPrice')?.value;
+            const minPrice = minPriceInput && minPriceInput.trim() ? parseFloat(minPriceInput) : null;
+            const maxPrice = maxPriceInput && maxPriceInput.trim() ? parseFloat(maxPriceInput) : null;
+            
             const searchParams = {
                 locations: [locationSearch],
                 keywords: searchQuery || null, // Pass the full search query as keywords
-                min_price: parseFloat(document.getElementById('minPrice')?.value) || 0,
-                max_price: parseFloat(document.getElementById('maxPrice')?.value) || 1000000,
+                min_price: minPrice,
+                max_price: maxPrice,
                 property_types: [],
                 min_bedrooms: document.getElementById('minBedrooms')?.value ? parseInt(document.getElementById('minBedrooms').value) : null,
                 max_bedrooms: document.getElementById('maxBedrooms')?.value ? parseInt(document.getElementById('maxBedrooms').value) : null,
@@ -1328,8 +1398,7 @@
                 exclude_student_accommodation: true,
                 exclude_house_shares: true,
                 exclude_retirement: true,
-                max_pages: 20,
-                keywords: otherKeywords || null
+                max_pages: 20
             };
             
             // Get property types

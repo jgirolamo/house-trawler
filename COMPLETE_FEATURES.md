@@ -6,7 +6,7 @@
 - ✅ **OpenRent** scraper - Working
 - ✅ **OnTheMarket** scraper - Working  
 - ✅ **Spareroom** scraper - Working
-- ✅ **Gumtree** scraper - Implemented (URL issues)
+- ✅ **Gumtree** scraper - Working
 - ✅ **PrimeLocation** scraper - Implemented (403 blocking)
 - ✅ Multiple URL pattern attempts for each site
 - ✅ Session management with cookies
@@ -153,10 +153,11 @@ house trawler/
 
 ## 🎯 **Current Status**
 
-**Working Websites**: 3/5
+**Working Websites**: 4/5
 - ✅ OpenRent
 - ✅ OnTheMarket  
 - ✅ Spareroom
+- ✅ Gumtree
 
 **Total Properties**: 29 (from last scrape)
 

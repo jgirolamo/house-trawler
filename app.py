@@ -11,7 +11,7 @@ app = Flask(__name__)
 # Configuration for deployment
 PORT = int(os.environ.get('PORT', 5000))
 HOST = os.environ.get('HOST', '0.0.0.0')  # Use 0.0.0.0 for Render
-DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+DEBUG = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'  # Debug mode enabled by default
 
 # Load properties from JSON file
 def load_properties():
@@ -48,11 +48,8 @@ def api_stats():
         'by_type': {},
         'with_garden': 0,
         'with_balcony': 0,
-        'price_range': {
-            'min': None,
-            'max': None,
-            'avg': None
-        }
+        'min_price': None,
+        'max_price': None
     }
     
     prices = []
@@ -72,14 +69,14 @@ def api_stats():
             stats['with_balcony'] += 1
         
         # Collect prices
-        if prop.get('price'):
-            prices.append(prop['price'])
+        price = prop.get('price')
+        if price and isinstance(price, (int, float)) and price > 0:
+            prices.append(price)
     
     # Calculate price stats
     if prices:
-        stats['price_range']['min'] = min(prices)
-        stats['price_range']['max'] = max(prices)
-        stats['price_range']['avg'] = sum(prices) / len(prices)
+        stats['min_price'] = int(min(prices))
+        stats['max_price'] = int(max(prices))
     
     return jsonify(stats)
 
@@ -98,24 +95,44 @@ def run_trawler():
         """Run trawler in background with custom config."""
         try:
             # Create temporary config with search parameters
+            # Only include non-null values to avoid filtering when not intended
+            search_config = {
+                "locations": search_params.get('locations', ['London']),
+                "property_types": search_params.get('property_types', ['house', 'flat']),
+                "max_pages": search_params.get('max_pages', 20),
+                "exclude_student_accommodation": search_params.get('exclude_student_accommodation', True),
+                "exclude_house_shares": search_params.get('exclude_house_shares', True),
+                "exclude_retirement": search_params.get('exclude_retirement', True)
+            }
+            
+            # Only add price filters if they were explicitly set
+            if search_params.get('min_price') is not None:
+                search_config["min_price"] = search_params.get('min_price')
+            if search_params.get('max_price') is not None:
+                search_config["max_price"] = search_params.get('max_price')
+            
+            # Only add bedroom/bathroom filters if they were explicitly set
+            if search_params.get('min_bedrooms') is not None:
+                search_config["min_bedrooms"] = search_params.get('min_bedrooms')
+            if search_params.get('max_bedrooms') is not None:
+                search_config["max_bedrooms"] = search_params.get('max_bedrooms')
+            if search_params.get('min_bathrooms') is not None:
+                search_config["min_bathrooms"] = search_params.get('min_bathrooms')
+            if search_params.get('max_bathrooms') is not None:
+                search_config["max_bathrooms"] = search_params.get('max_bathrooms')
+            
+            # Only add feature filters if they were explicitly set
+            if search_params.get('has_garden') is not None:
+                search_config["has_garden"] = search_params.get('has_garden')
+            if search_params.get('has_balcony') is not None:
+                search_config["has_balcony"] = search_params.get('has_balcony')
+            
+            # Add keywords if provided
+            if search_params.get('keywords'):
+                search_config["keywords"] = search_params.get('keywords')
+            
             temp_config = {
-                "search_params": {
-                    "locations": search_params.get('locations', ['London']),
-                    "min_price": search_params.get('min_price', 0),
-                    "max_price": search_params.get('max_price', 1000000),
-                    "property_types": search_params.get('property_types', ['house', 'flat']),
-                    "max_pages": search_params.get('max_pages', 20),
-                    "min_bedrooms": search_params.get('min_bedrooms'),
-                    "max_bedrooms": search_params.get('max_bedrooms'),
-                    "min_bathrooms": search_params.get('min_bathrooms'),
-                    "max_bathrooms": search_params.get('max_bathrooms'),
-                    "has_garden": search_params.get('has_garden'),
-                    "has_balcony": search_params.get('has_balcony'),
-                    "exclude_student_accommodation": search_params.get('exclude_student_accommodation', True),
-                    "exclude_house_shares": search_params.get('exclude_house_shares', True),
-                    "exclude_retirement": search_params.get('exclude_retirement', True),
-                    "keywords": search_params.get('keywords')
-                },
+                "search_params": search_config,
                 "output_dir": "output",
                 "delay_between_requests": 3
             }

@@ -58,7 +58,7 @@
 - ✅ OpenRent - Working
 - ✅ OnTheMarket - Working  
 - ✅ Spareroom - Working (found 7 properties in last run)
-- ⚠️ Gumtree - URL issues
+- ✅ Gumtree - Working
 - ⚠️ PrimeLocation - 403 blocking
 
 ### Match Scoring

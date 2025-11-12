@@ -80,8 +80,7 @@ Last Updated: Based on test run results
 
 ## Summary
 
-**Currently Working**: 3 websites (OpenRent, OnTheMarket, Spareroom) ✅
-**Testing/Improved**: 1 website (Gumtree) ⚠️
+**Currently Working**: 4 websites (OpenRent, OnTheMarket, Spareroom, Gumtree) ✅
 **Blocked/Protected**: 1 website (PrimeLocation) ⚠️
 **Not Implemented**: 2 websites (Rightmove, Zoopla)
 
@@ -90,19 +89,18 @@ Last Updated: Based on test run results
 From the production test:
 - **OpenRent**: Found 63 listings → Extracted properties ✅
 - **OnTheMarket**: Found 119 listings → Extracted properties ✅
-- **Spareroom**: 404 errors ❌
-- **Gumtree**: 404 errors ❌
+- **Spareroom**: Found 11 properties ✅
+- **Gumtree**: Found 30 properties ✅
 - **PrimeLocation**: 403 Forbidden ❌
 
 **Total Properties Found**: 22 (after filtering)
 
 ## Recommendations
 
-1. **OpenRent, OnTheMarket & Spareroom**: Continue using - all working well ✅
-2. **Gumtree**: Testing improved methods with category-based URLs and multiple selectors. May need further investigation or Selenium if still not working.
-3. **PrimeLocation**: Strong anti-bot protection - may need Selenium/Playwright or official API
-4. **Rightmove/Zoopla**: Consider using official APIs if available (both have strict ToS)
-5. **Additional Sites to Consider**:
+1. **OpenRent, OnTheMarket, Spareroom & Gumtree**: Continue using - all working well ✅
+2. **PrimeLocation**: Strong anti-bot protection - may need Selenium/Playwright or official API
+3. **Rightmove/Zoopla**: Consider using official APIs if available (both have strict ToS)
+4. **Additional Sites to Consider**:
    - **Movebubble** - London-focused rental platform
    - **Moveflat** - Student and professional rentals
    - **Roomgo** - Room and property sharing
